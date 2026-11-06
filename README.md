@@ -1,0 +1,2 @@
+# Aimlock-Admin
+Admin key
