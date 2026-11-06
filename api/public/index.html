@@ -1,971 +1,791 @@
 
-
 <!doctype html>
-
 <html lang="vi">
-
 <head>
-
   <meta charset="utf-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-
   <meta name="theme-color" content="#0b0715">
-
   <title>AIMLOCK PEDINHIOS · Admin</title>
 
   <style>
-
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-    :root{color-scheme:dark;--bg:#0b0715;--panel:#151020;--panel2:#1d1530;--line:#35264a;--text:#f5efff;--muted:#aa9abf;--purple:#b879ff;--green:#55e69a;--red:#ff6b86;--yellow:#ffc46b}
+    :root {
+      color-scheme: dark;
+      --bg:#0b0715;
+      --panel:#151020;
+      --panel2:#1d1530;
+      --line:#35264a;
+      --text:#f5efff;
+      --muted:#aa9abf;
+      --purple:#b879ff;
+      --green:#55e69a;
+      --red:#ff6b86;
+      --yellow:#ffc46b;
+    }
 
-    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% 0%,#291442 0,transparent 38%),radial-gradient(ellipse at 100% 20%,#172044 0,transparent 35%),var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;min-height:100vh}
+    * { box-sizing:border-box; }
 
-    .wrap{width:min(1120px,100%);margin:auto;padding:22px 16px 50px}.brand{display:flex;align-items:center;gap:12px;margin-bottom:25px}.logo{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(135deg,#6935a0,#1b9c78);font-size:22px;box-shadow:0 0 28px #9b54ff55}.brand h1{font-size:16px;letter-spacing:.08em;margin:0}.brand p{font-size:10px;color:var(--muted);letter-spacing:.16em;margin:5px 0 0}.spacer{flex:1}
+    body {
+      margin:0;
+      background:
+        radial-gradient(ellipse at 15% 0%,#291442 0,transparent 38%),
+        radial-gradient(ellipse at 100% 20%,#172044 0,transparent 35%),
+        var(--bg);
+      color:var(--text);
+      font-family:Inter,system-ui,sans-serif;
+      min-height:100vh;
+    }
 
-    .badge{font-size:10px;font-weight:800;letter-spacing:.08em;padding:7px 10px;border-radius:999px;background:#163c2c;color:var(--green);border:1px solid #2c7754}
+    .wrap { width:min(1120px,100%);margin:auto;padding:22px 16px 50px; }
+    .brand { display:flex;align-items:center;gap:12px;margin-bottom:25px; }
+    .logo {
+      width:46px;height:46px;border-radius:15px;
+      display:grid;place-items:center;
+      background:linear-gradient(135deg,#6935a0,#1b9c78);
+      font-size:22px;box-shadow:0 0 28px #9b54ff55;
+    }
+    .brand h1 { font-size:16px;letter-spacing:.08em;margin:0; }
+    .brand p { font-size:10px;color:var(--muted);letter-spacing:.16em;margin:5px 0 0; }
+    .spacer { flex:1; }
 
-    .panel{background:linear-gradient(145deg,#191327f2,#100c1aee);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 18px 55px #0005}.login{max-width:430px;margin:8vh auto}.eyebrow{color:var(--purple);font-size:10px;font-weight:800;letter-spacing:.2em}.title{font-size:25px;font-weight:900;margin:8px 0}.sub{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 22px}
+    .badge {
+      font-size:10px;font-weight:800;letter-spacing:.08em;
+      padding:7px 10px;border-radius:999px;
+      background:#163c2c;color:var(--green);border:1px solid #2c7754;
+    }
 
-    label{display:block;font-size:12px;font-weight:700;margin:15px 0 8px;color:#d9cce8}input,select,textarea{width:100%;background:#0e0a17;border:1px solid #413052;border-radius:12px;color:#fff;padding:14px;font:inherit;font-size:14px;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--purple);box-shadow:0 0 0 3px #b879ff20}button{border:0;border-radius:12px;padding:12px 15px;font:inherit;font-weight:800;font-size:12px;cursor:pointer;transition:.15s}button:disabled{opacity:.5;cursor:not-allowed}.primary{width:100%;margin-top:20px;color:#10091b;background:linear-gradient(100deg,#c38bff,#6ee9b0);box-shadow:0 8px 25px #a66bff30}.secondary{background:#2b1b40;color:#dec9f6;border:1px solid #594070}.danger{background:#401a29;color:#ff9bad;border:1px solid #783247}.success{background:#163c2c;color:#70edaa;border:1px solid #2b7651}.warning{background:#3c2b17;color:#ffd18a;border:1px solid #77542b}.small{padding:9px 11px;font-size:11px}.hidden{display:none!important}.error{color:#ff91a4;font-size:12px;margin-top:12px;min-height:18px}.successText{color:var(--green);font-size:12px;margin-top:12px}
+    .panel {
+      background:linear-gradient(145deg,#191327f2,#100c1aee);
+      border:1px solid var(--line);border-radius:20px;
+      padding:20px;box-shadow:0 18px 55px #0005;
+    }
 
-    .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}.top h2{font-size:23px;margin:0}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.stat{padding:16px;border-radius:16px;background:#171123;border:1px solid var(--line)}.stat strong{display:block;font-size:27px}.stat span{color:var(--muted);font-size:11px}.green{color:var(--green)}.purple{color:#d2a8ff}.yellow{color:var(--yellow)}.red{color:var(--red)}
+    .login { max-width:430px;margin:8vh auto; }
+    .eyebrow { color:var(--purple);font-size:10px;font-weight:800;letter-spacing:.2em; }
+    .title { font-size:25px;font-weight:900;margin:8px 0; }
+    .sub { color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 22px; }
 
-    .columns{display:grid;grid-template-columns:380px 1fr;gap:16px;align-items:start}.sectionTitle{font-size:14px;margin:0 0 15px}.hint{font-size:11px;color:var(--muted);line-height:1.55}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.keyReveal{background:#0d211a;border:1px solid #286648;padding:15px;border-radius:14px;margin-top:15px}.keyReveal code{display:block;color:#70edaa;font-size:16px;font-weight:900;word-break:break-all;margin:10px 0}.keyList{display:grid;gap:10px}.keyCard{background:#171123;border:1px solid var(--line);border-radius:15px;padding:15px}.keyHead{display:flex;align-items:center;justify-content:space-between;gap:10px}.keyCode{font-size:13px;font-weight:900;letter-spacing:.03em;word-break:break-all}.status{font-size:10px;font-weight:800;padding:6px 9px;border-radius:999px;white-space:nowrap}.status.active{background:#153c2b;color:#65e9a2}.status.locked,.status.revoked{background:#431c2b;color:#ff91a4}.status.expired{background:#3b2b17;color:#ffd18a}.meta{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin:11px 0}.actions{display:flex;gap:8px;flex-wrap:wrap}.toolbar{display:flex;gap:10px;margin:0 0 13px}.toolbar input{flex:1}.empty{padding:30px;text-align:center;color:var(--muted);border:1px dashed #49365e;border-radius:14px;font-size:13px}.notice{font-size:11px;color:var(--muted);line-height:1.6;margin-top:14px}
+    label { display:block;font-size:12px;font-weight:700;margin:15px 0 8px;color:#d9cce8; }
 
-    @media(max-width:850px){.columns{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:420px){.wrap{padding:16px 12px 35px}.panel{padding:16px}.row{grid-template-columns:1fr}.keyHead{align-items:flex-start;flex-direction:column}.stats{gap:8px}.stat{padding:13px}.stat strong{font-size:23px}}
+    input,select,textarea {
+      width:100%;background:#0e0a17;border:1px solid #413052;
+      border-radius:12px;color:#fff;padding:14px;
+      font:inherit;font-size:14px;outline:none;
+    }
 
+    input:focus,select:focus,textarea:focus {
+      border-color:var(--purple);
+      box-shadow:0 0 0 3px #b879ff20;
+    }
+
+    button {
+      border:0;border-radius:12px;padding:12px 15px;
+      font:inherit;font-weight:800;font-size:12px;
+      cursor:pointer;transition:.15s;
+    }
+
+    button:disabled { opacity:.5;cursor:not-allowed; }
+    .primary {
+      width:100%;margin-top:20px;color:#10091b;
+      background:linear-gradient(100deg,#c38bff,#6ee9b0);
+      box-shadow:0 8px 25px #a66bff30;
+    }
+    .secondary { background:#2b1b40;color:#dec9f6;border:1px solid #594070; }
+    .danger { background:#401a29;color:#ff9bad;border:1px solid #783247; }
+    .success { background:#163c2c;color:#70edaa;border:1px solid #2b7651; }
+    .warning { background:#3c2b17;color:#ffd18a;border:1px solid #77542b; }
+    .small { padding:9px 11px;font-size:11px; }
+    .hidden { display:none!important; }
+    .error { color:#ff91a4;font-size:12px;margin-top:12px;min-height:18px; }
+    .successText { color:var(--green);font-size:12px;margin-top:12px; }
+
+    .top { display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px; }
+    .top h2 { font-size:23px;margin:0; }
+    .stats { display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px; }
+    .stat { padding:16px;border-radius:16px;background:#171123;border:1px solid var(--line); }
+    .stat strong { display:block;font-size:27px; }
+    .stat span { color:var(--muted);font-size:11px; }
+    .green { color:var(--green); }
+    .purple { color:#d2a8ff; }
+    .yellow { color:var(--yellow); }
+    .red { color:var(--red); }
+
+    .columns { display:grid;grid-template-columns:380px 1fr;gap:16px;align-items:start; }
+    .sectionTitle { font-size:14px;margin:0 0 15px; }
+    .hint { font-size:11px;color:var(--muted);line-height:1.55; }
+    .row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+
+    .keyReveal {
+      background:#0d211a;border:1px solid #286648;
+      padding:15px;border-radius:14px;margin-top:15px;
+    }
+    .keyReveal code {
+      display:block;color:#70edaa;font-size:16px;font-weight:900;
+      word-break:break-all;margin:10px 0;
+    }
+
+    .keyList { display:grid;gap:10px; }
+    .keyCard { background:#171123;border:1px solid var(--line);border-radius:15px;padding:15px; }
+    .keyHead { display:flex;align-items:center;justify-content:space-between;gap:10px; }
+    .keyCode { font-size:13px;font-weight:900;letter-spacing:.03em;word-break:break-all; }
+    .status { font-size:10px;font-weight:800;padding:6px 9px;border-radius:999px;white-space:nowrap; }
+    .status.active { background:#153c2b;color:#65e9a2; }
+    .status.locked,.status.revoked { background:#431c2b;color:#ff91a4; }
+    .status.expired { background:#3b2b17;color:#ffd18a; }
+    .meta { display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin:11px 0; }
+    .actions { display:flex;gap:8px;flex-wrap:wrap; }
+    .toolbar { display:flex;gap:10px;margin:0 0 13px; }
+    .toolbar input { flex:1; }
+    .empty {
+      padding:30px;text-align:center;color:var(--muted);
+      border:1px dashed #49365e;border-radius:14px;font-size:13px;
+    }
+    .notice { font-size:11px;color:var(--muted);line-height:1.6;margin-top:14px; }
+
+    @media(max-width:850px) {
+      .columns { grid-template-columns:1fr; }
+      .stats { grid-template-columns:repeat(2,1fr); }
+    }
+
+    @media(max-width:420px) {
+      .wrap { padding:16px 12px 35px; }
+      .panel { padding:16px; }
+      .row { grid-template-columns:1fr; }
+      .keyHead { align-items:flex-start;flex-direction:column; }
+      .stats { gap:8px; }
+      .stat { padding:13px; }
+      .stat strong { font-size:23px; }
+    }
   </style>
-
 </head>
 
 <body>
+<main class="wrap">
 
-  <main class="wrap">
+  <header class="brand">
+    <div class="logo">⚡</div>
+    <div>
+      <h1>AIMLOCK PEDINHIOS</h1>
+      <p>PREMIUM KEY MANAGEMENT</p>
+    </div>
+    <div class="spacer"></div>
+    <span class="badge">ADMIN SYSTEM</span>
+  </header>
 
-    <header class="brand">
+  <section id="loginView" class="panel login">
+    <div class="eyebrow">SECURE ACCESS</div>
+    <h2 class="title">ĐĂNG NHẬP ADMIN</h2>
+    <p class="sub">Chỉ quản trị viên có tài khoản và mật khẩu hợp lệ mới được truy cập hệ thống tạo Key.</p>
 
-      <div class="logo">⚡</div>
+    <form id="loginForm">
+      <label for="username">Tài khoản Admin</label>
+      <input id="username" autocomplete="username" required placeholder="Nhập tài khoản Admin">
 
-      <div><h1>AIMLOCK PEDINHIOS</h1><p>PREMIUM KEY MANAGEMENT</p></div>
+      <label for="password">Mật khẩu Admin</label>
+      <input id="password" type="password" autocomplete="current-password" required placeholder="Nhập mật khẩu Admin">
 
-      <div class="spacer"></div><span class="badge">ADMIN SYSTEM</span>
+      <button class="primary" id="loginButton">ĐĂNG NHẬP ADMIN</button>
+      <div id="loginMessage" class="error"></div>
+    </form>
 
-    </header>
+    <p class="notice">Phiên đăng nhập được bảo vệ bằng cookie HttpOnly và tự hết hạn sau 8 giờ.</p>
+  </section>
 
-    <section id="loginView" class="panel login">
+  <section id="adminView" class="hidden">
 
-      <div class="eyebrow">SECURE ACCESS</div>
-
-      <h2 class="title">ĐĂNG NHẬP ADMIN</h2>
-
-      <p class="sub">Chỉ quản trị viên có tài khoản và mật khẩu hợp lệ mới được truy cập hệ thống tạo Key.</p>
-
-      <form id="loginForm">
-
-        <label for="username">Tài khoản Admin</label>
-
-        <input id="username" autocomplete="username" required placeholder="Nhập tài khoản Admin">
-
-        <label for="password">Mật khẩu Admin</label>
-
-        <input id="password" type="password" autocomplete="current-password" required placeholder="Nhập mật khẩu Admin">
-
-        <button class="primary" id="loginButton">ĐĂNG NHẬP ADMIN</button>
-
-        <div id="loginMessage" class="error"></div>
-
-      </form>
-
-      <p class="notice">Phiên đăng nhập được bảo vệ bằng cookie HttpOnly và tự hết hạn sau 8 giờ.</p>
-
-    </section>
-
-    <section id="adminView" class="hidden">
-
-      <div class="top"><div><div class="eyebrow">CONTROL CENTER</div><h2>Quản lý Key</h2></div><div class="spacer"></div><button id="refreshButton" class="secondary">↻ Làm mới</button><button id="logoutButton" class="danger">Đăng xuất</button></div>
-
-      <div class="stats">
-
-        <div class="stat"><strong id="totalCount" class="purple">0</strong><span>Tổng số Key</span></div>
-
-        <div class="stat"><strong id="activeCount" class="green">0</strong><span>Đang hoạt động</span></div>
-
-        <div class="stat"><strong id="lockedCount" class="red">0</strong><span>Đã khóa</span></div>
-
-        <div class="stat"><strong id="expiredCount" class="yellow">0</strong><span>Đã hết hạn</span></div>
-
+    <div class="top">
+      <div>
+        <div class="eyebrow">CONTROL CENTER</div>
+        <h2>Quản lý Key</h2>
       </div>
+      <div class="spacer"></div>
+      <button id="refreshButton" class="secondary">↻ Làm mới</button>
+      <button id="logoutButton" class="danger">Đăng xuất</button>
+    </div>
 
-      <div class="columns">
+    <div class="stats">
+      <div class="stat"><strong id="totalCount" class="purple">0</strong><span>Tổng số Key</span></div>
+      <div class="stat"><strong id="activeCount" class="green">0</strong><span>Đang hoạt động</span></div>
+      <div class="stat"><strong id="lockedCount" class="red">0</strong><span>Đã khóa</span></div>
+      <div class="stat"><strong id="expiredCount" class="yellow">0</strong><span>Đã hết hạn</span></div>
+    </div>
 
-        <section class="panel">
+    <div class="columns">
 
-          <h3 class="sectionTitle">✦ TẠO KEY MỚI</h3>
+      <section class="panel">
+        <h3 class="sectionTitle">✦ TẠO KEY MỚI</h3>
 
-          <form id="createForm">
+        <form id="createForm">
+          <label for="durationType">Loại Key</label>
+          <select id="durationType">
+            <option value="hours">Key giờ</option>
+            <option value="days" selected>Key ngày</option>
+            <option value="weeks">Key tuần</option>
+            <option value="months">Key tháng</option>
+            <option value="years">Key năm</option>
+            <option value="permanent">Key vĩnh viễn</option>
+          </select>
 
-            <label for="durationType">Loại Key</label>
-
-            <select id="durationType">
-
-              <option value="hours">Key giờ</option><option value="days" selected>Key ngày</option><option value="weeks">Key tuần</option><option value="months">Key tháng</option><option value="years">Key năm</option><option value="permanent">Key vĩnh viễn</option>
-
-            </select>
-
-            <div id="durationWrap"><label for="durationValue">Thời hạn</label><input id="durationValue" type="number" min="1" max="100000" value="7" required><p class="hint" id="durationHint">Nhập số ngày muốn sử dụng.</p></div>
-
-            <label for="maxDevices">Số lượng thiết bị</label>
-
-            <input id="maxDevices" type="number" min="1" max="100000" value="1" required placeholder="Ví dụ: 3">
-
-            <p class="hint">Nhập số thiết bị được phép kích hoạt Key. Giới hạn được kiểm tra ở API khi ứng dụng gửi mã thiết bị.</p>
-
-            <label for="note">Ghi chú (không bắt buộc)</label>
-
-            <input id="note" maxlength="200" placeholder="Ví dụ: Khách hàng / đơn hàng">
-
-            <button class="primary" id="createButton">＋ TẠO KEY</button>
-
-          </form>
-
-          <div id="createMessage" class="error"></div>
-
-          <div id="keyReveal" class="keyReveal hidden">
-
-            <div class="eyebrow">KEY VỪA TẠO · CHỈ HIỆN MỘT LẦN</div>
-
-            <code id="newKey"></code>
-
-            <button id="copyKeyButton" class="success">▣ SAO CHÉP KEY</button>
-
-            <p id="newKeyInfo" class="hint"></p>
-
+          <div id="durationWrap">
+            <label for="durationValue">Thời hạn</label>
+            <input id="durationValue" type="number" min="1" max="100000" value="7" required>
+            <p class="hint" id="durationHint">Nhập số ngày muốn sử dụng.</p>
           </div>
 
-          <p class="notice">Key được lưu dưới dạng mã băm ở cơ sở dữ liệu. Hãy sao chép và gửi Key cho người dùng ngay sau khi tạo.</p>
+          <label for="maxDevices">Số lượng thiết bị</label>
+          <input id="maxDevices" type="number" min="1" max="100000" value="1" required placeholder="Ví dụ: 3">
+          <p class="hint">Nhập số thiết bị được phép kích hoạt Key. Giới hạn được kiểm tra ở API khi ứng dụng gửi mã thiết bị.</p>
 
-        </section>
+          <label for="note">Ghi chú (không bắt buộc)</label>
+          <input id="note" maxlength="200" placeholder="Ví dụ: Khách hàng / đơn hàng">
 
-        <section class="panel">
+          <button class="primary" id="createButton">＋ TẠO KEY</button>
+        </form>
 
-          <div class="top"><h3 class="sectionTitle" style="margin:0">DANH SÁCH KEY</h3><div class="spacer"></div></div>
+        <div id="createMessage" class="error"></div>
 
-          <div class="toolbar"><input id="searchInput" placeholder="Tìm theo mã gợi nhớ hoặc ghi chú..."></div>
+        <div id="keyReveal" class="keyReveal hidden">
+          <div class="eyebrow">KEY VỪA TẠO · CHỈ HIỆN MỘT LẦN</div>
+          <code id="newKey"></code>
+          <button id="copyKeyButton" class="success">▣ SAO CHÉP KEY</button>
+          <p id="newKeyInfo" class="hint"></p>
+        </div>
 
-          <div id="keyList" class="keyList"><div class="empty">Chưa tải danh sách Key.</div></div>
+        <p class="notice">Key được lưu dưới dạng mã băm ở cơ sở dữ liệu. Hãy sao chép và gửi Key cho người dùng ngay sau khi tạo.</p>
+      </section>
 
-        </section>
+      <section class="panel">
+        <div class="top">
+          <h3 class="sectionTitle" style="margin:0">DANH SÁCH KEY</h3>
+          <div class="spacer"></div>
+        </div>
 
-      </div>
+        <div class="toolbar">
+          <input id="searchInput" placeholder="Tìm theo mã gợi nhớ hoặc ghi chú...">
+        </div>
 
-    </section>
+        <div id="keyList" class="keyList">
+          <div class="empty">Chưa tải danh sách Key.</div>
+        </div>
+      </section>
 
-  </main>
+    </div>
+  </section>
+</main>
 
 <script>
+"use strict";
 
 const $ = id => document.getElementById(id);
 
 let keys = [];
-
 let lastCreatedKey = "";
 
 const typeNames = {
-
   hours:"giờ",
-
   days:"ngày",
-
   weeks:"tuần",
-
   months:"tháng",
-
   years:"năm",
-
   permanent:"VĨNH VIỄN"
-
 };
 
 const fmt = value => {
-
   if (!value) return "Chưa có dữ liệu";
-
   const date = new Date(value);
-
-  return Number.isNaN(date.getTime()) ? "Chưa có dữ liệu" : date.toLocaleString("vi-VN");
-
+  return Number.isNaN(date.getTime())
+    ? "Chưa có dữ liệu"
+    : date.toLocaleString("vi-VN");
 };
 
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({
-
   "&":"&amp;",
-
   "<":"&lt;",
-
   ">":"&gt;",
-
   '"':"&quot;",
-
   "'":"&#39;"
-
 }[c]));
 
 async function api(url, options={}) {
-
   const response = await fetch(url, {
-
     credentials:"same-origin",
-
     ...options,
-
     headers:{
-
       "Content-Type":"application/json",
-
-      ...(options.headers||{})
-
+      ...(options.headers || {})
     }
-
   });
 
   let data = {};
-
   try {
-
     data = await response.json();
-
   } catch {}
 
   if (!response.ok) {
-
     throw new Error(data.message || "Có lỗi xảy ra. Vui lòng thử lại.");
-
   }
 
   return data;
-
 }
 
 function showLogin() {
-
   $("adminView").classList.add("hidden");
-
   $("loginView").classList.remove("hidden");
-
 }
 
 function showAdmin() {
-
   $("loginView").classList.add("hidden");
-
   $("adminView").classList.remove("hidden");
-
   loadKeys();
-
 }
 
-// LOGIN: Luôn yêu cầu nhập tài khoản và mật khẩu
-
+/* LOGIN */
 $("loginForm").addEventListener("submit", async e => {
-
   e.preventDefault();
-
   $("loginMessage").textContent = "";
-
   $("loginButton").disabled = true;
 
   try {
-
     await api("/api/admin/login", {
-
       method:"POST",
-
       body:JSON.stringify({
-
         username:$("username").value.trim(),
-
         password:$("password").value
-
       })
-
     });
 
     $("password").value = "";
-
     showAdmin();
-
   } catch (err) {
-
     $("loginMessage").textContent = err.message;
-
   } finally {
-
     $("loginButton").disabled = false;
-
   }
-
 });
 
-// LOGOUT
-
+/* LOGOUT */
 $("logoutButton").addEventListener("click", async () => {
-
   try {
-
     await api("/api/admin/logout", {
-
       method:"POST",
-
       body:"{}"
-
     });
-
   } catch {}
 
   keys = [];
-
   showLogin();
-
 });
 
-// REFRESH
-
+/* REFRESH */
 $("refreshButton").addEventListener("click", loadKeys);
 
-// DURATION
-
+/* DURATION */
 $("durationType").addEventListener("change", () => {
-
   const type = $("durationType").value;
-
   const permanent = type === "permanent";
 
   $("durationWrap").classList.toggle("hidden", permanent);
-
   $("durationValue").required = !permanent;
-
   $("durationHint").textContent =
-
     "Nhập số " + (typeNames[type] || "") + " muốn sử dụng.";
-
 });
 
-// CREATE KEY
-
+/* CREATE KEY */
 $("createForm").addEventListener("submit", async e => {
-
   e.preventDefault();
 
   $("createMessage").textContent = "";
-
   $("createButton").disabled = true;
-
   $("keyReveal").classList.add("hidden");
 
   const durationType = $("durationType").value;
-
   const durationValue = durationType === "permanent"
-
     ? null
-
     : Number($("durationValue").value);
 
   const maxDevices = Number($("maxDevices").value);
 
   if (
-
     durationType !== "permanent" &&
-
     (!Number.isInteger(durationValue) || durationValue < 1)
-
   ) {
-
     $("createMessage").textContent = "Thời hạn phải là số nguyên lớn hơn 0.";
-
     $("createButton").disabled = false;
-
     return;
-
   }
 
   if (!Number.isInteger(maxDevices) || maxDevices < 1) {
-
     $("createMessage").textContent = "Số lượng thiết bị không hợp lệ.";
-
     $("createButton").disabled = false;
-
     return;
-
   }
 
   const payload = {
-
     durationType,
-
     durationValue,
-
     type:durationType,
-
     amount:durationValue,
-
     maxDevices,
-
     note:$("note").value.trim()
-
   };
 
   try {
-
     const data = await api("/api/admin/keys", {
-
       method:"POST",
-
       body:JSON.stringify(payload)
-
     });
 
     if (!data.key) {
-
       throw new Error("Server không trả về KEY.");
-
     }
 
     lastCreatedKey = data.key;
-
     $("newKey").textContent = data.key;
 
     const expiryText = durationType === "permanent"
-
       ? "VĨNH VIỄN"
-
       : fmt(data.expiresAt);
 
     $("newKeyInfo").textContent =
-
       "Tạo lúc: " + fmt(data.createdAt) +
-
       " · Hết hạn: " + expiryText +
-
       " · Thiết bị tối đa: " + (data.maxDevices ?? maxDevices);
 
     $("keyReveal").classList.remove("hidden");
-
     $("note").value = "";
 
     await loadKeys();
-
   } catch (err) {
-
     $("createMessage").textContent = err.message;
-
   } finally {
-
     $("createButton").disabled = false;
-
   }
-
 });
 
-// COPY NEW KEY
-
-$("copyKeyButton").addEventListener("click", async () => {
-
-  if (!lastCreatedKey) return;
-
-  try {
-
-    await copyText(lastCreatedKey);
-
-    $("copyKeyButton").textContent = "ĐÃ SAO CHÉP ✓";
-
-    setTimeout(() => {
-
-      $("copyKeyButton").textContent = "▣ SAO CHÉP KEY";
-
-    }, 1800);
-
-  } catch (err) {
-
-    alert("Không thể sao chép KEY: " + err.message);
-
-  }
-
-});
-
-// COPY TEXT WITH FALLBACK
-
+/* COPY TEXT */
 async function copyText(value) {
-
   if (navigator.clipboard && window.isSecureContext) {
-
     await navigator.clipboard.writeText(value);
-
     return;
-
   }
 
   const area = document.createElement("textarea");
-
   area.value = value;
-
   area.style.position = "fixed";
-
-  area.style.opacity = "0";
+  area.style.left = "-9999px";
+  area.style.top = "0";
 
   document.body.appendChild(area);
-
   area.focus();
-
   area.select();
 
   const copied = document.execCommand("copy");
-
   area.remove();
 
   if (!copied) {
-
     throw new Error("Trình duyệt không cho phép sao chép.");
-
   }
-
 }
 
-// COPY EXISTING KEY
+/* COPY NEW KEY */
+$("copyKeyButton").addEventListener("click", async () => {
+  if (!lastCreatedKey) return;
 
-async function copyExistingKey(id, button) {
-
-  const oldText = button.textContent;
-
+  const button = $("copyKeyButton");
   button.disabled = true;
 
   try {
+    await copyText(lastCreatedKey);
+    button.textContent = "ĐÃ SAO CHÉP ✓";
+  } catch (err) {
+    alert("Không thể sao chép KEY: " + err.message);
+  } finally {
+    setTimeout(() => {
+      button.textContent = "▣ SAO CHÉP KEY";
+      button.disabled = false;
+    }, 1800);
+  }
+});
 
+/* COPY EXISTING KEY FROM SERVER */
+async function copyExistingKey(id, button) {
+  const oldText = button.textContent;
+  button.disabled = true;
+
+  try {
     const data = await api(
-
       "/api/admin/keys/" + encodeURIComponent(id) + "/copy",
-
       {
-
         method:"POST",
-
         body:"{}"
-
       }
-
     );
 
     if (!data.key) {
-
       throw new Error("Server không trả về KEY.");
-
     }
 
     await copyText(data.key);
-
     button.textContent = "ĐÃ SAO CHÉP ✓";
 
     setTimeout(() => {
-
       button.textContent = oldText;
-
       button.disabled = false;
-
     }, 1800);
 
   } catch (err) {
-
     button.disabled = false;
-
     alert("Không sao chép được KEY: " + err.message);
-
   }
-
 }
 
-// STATUS
-
+/* STATUS */
 function effectiveStatus(k) {
-
   if (k.status !== "active") return k.status;
 
   if (
-
     k.duration_type !== "permanent" &&
-
     k.expires_at &&
-
     new Date(k.expires_at).getTime() <= Date.now()
-
   ) {
-
     return "expired";
-
   }
 
   return "active";
-
 }
 
-// COUNTDOWN
-
+/* COUNTDOWN */
 function countdown(k) {
-
   if (k.duration_type === "permanent") {
-
     return "VĨNH VIỄN";
-
   }
 
   if (!k.expires_at) {
-
     return "Chưa có dữ liệu hết hạn";
-
   }
 
   const diff = new Date(k.expires_at).getTime() - Date.now();
-
   if (diff <= 0) return "Đã hết hạn";
 
-  const sec = Math.floor(diff/1000);
-
-  const days = Math.floor(sec/86400);
-
-  const hours = Math.floor(sec%86400/3600);
-
-  const mins = Math.floor(sec%3600/60);
-
-  const seconds = sec%60;
+  const sec = Math.floor(diff / 1000);
+  const days = Math.floor(sec / 86400);
+  const hours = Math.floor(sec % 86400 / 3600);
+  const mins = Math.floor(sec % 3600 / 60);
+  const seconds = sec % 60;
 
   return `${days} ngày ${hours} giờ ${mins} phút ${seconds} giây`;
-
 }
 
-// LOAD KEYS
-
+/* LOAD KEYS */
 async function loadKeys() {
-
-  $("keyList").innerHTML =
-
-    '<div class="empty">Đang tải...</div>';
+  $("keyList").innerHTML = '<div class="empty">Đang tải...</div>';
 
   try {
-
     const data = await api("/api/admin/keys");
-
-    keys = data.keys || [];
-
+    keys = Array.isArray(data.keys) ? data.keys : [];
     renderKeys();
-
   } catch (err) {
-
     $("keyList").innerHTML =
-
       '<div class="empty">' + escapeHtml(err.message) + '</div>';
-
   }
-
 }
 
-// RENDER
-
+/* RENDER */
 function renderKeys() {
-
-  const active = keys.filter(
-
-    k => effectiveStatus(k) === "active"
-
+  const active = keys.filter(k => effectiveStatus(k) === "active").length;
+  const locked = keys.filter(k =>
+    ["locked","revoked"].includes(effectiveStatus(k))
   ).length;
-
-  const locked = keys.filter(
-
-    k => ["locked","revoked"].includes(effectiveStatus(k))
-
-  ).length;
-
-  const expired = keys.filter(
-
-    k => effectiveStatus(k) === "expired"
-
-  ).length;
+  const expired = keys.filter(k => effectiveStatus(k) === "expired").length;
 
   $("totalCount").textContent = keys.length;
-
   $("activeCount").textContent = active;
-
   $("lockedCount").textContent = locked;
-
   $("expiredCount").textContent = expired;
 
   const q = $("searchInput").value.trim().toLowerCase();
 
   const filtered = keys.filter(k =>
-
-    (`${k.key_hint} ${k.note||""}`).toLowerCase().includes(q)
-
+    (`${k.key_hint} ${k.note || ""}`).toLowerCase().includes(q)
   );
 
   if (!filtered.length) {
-
     $("keyList").innerHTML =
-
       '<div class="empty">Chưa có Key phù hợp.</div>';
-
     return;
-
   }
 
   $("keyList").innerHTML = filtered.map(k => {
-
     const status = effectiveStatus(k);
 
     const statusText =
-
       status === "active" ? "Đang hoạt động" :
-
       status === "expired" ? "Đã hết hạn" :
-
       status === "revoked" ? "Đã thu hồi" :
-
       "Đã khóa";
 
     const type = typeNames[k.duration_type] || "Key";
-
     const used = Number(k.devices_used || k.device_count || 0);
-
     const max = Number(k.max_devices || 1);
 
-    const expiryText =
-
-      k.duration_type === "permanent"
-
-        ? "VĨNH VIỄN"
-
-        : fmt(k.expires_at);
+    const expiryText = k.duration_type === "permanent"
+      ? "VĨNH VIỄN"
+      : fmt(k.expires_at);
 
     const buttons = status === "active"
-
       ? `<button class="warning small" data-action="lock" data-id="${escapeHtml(k.id)}">🔒 Khóa Key</button>`
-
       : (status === "locked" || status === "revoked")
-
         ? `<button class="success small" data-action="unlock" data-id="${escapeHtml(k.id)}">🔓 Mở khóa</button>`
-
         : "";
 
-    return `<article class="keyCard">
+    return `
+      <article class="keyCard">
+        <div class="keyHead">
+          <div class="keyCode">
+            AIM-••••-••••-••••-${escapeHtml(String(k.key_hint || "").slice(-4))}
+          </div>
+          <span class="status ${escapeHtml(status)}">${statusText}</span>
+        </div>
 
-      <div class="keyHead">
+        <div class="meta">
+          <span>Loại: ${escapeHtml(type)}</span>
+          <span>Thiết bị: ${used}/${max}</span>
+        </div>
 
-        <div class="keyCode">AIM-••••-••••-••••-${escapeHtml(String(k.key_hint||"").slice(-4))}</div>
+        <div class="meta">
+          <span>Tạo: ${escapeHtml(fmt(k.created_at))}</span>
+        </div>
 
-        <span class="status ${status}">${statusText}</span>
+        <div class="meta">
+          <span>Kích hoạt: ${escapeHtml(fmt(k.activated_at))}</span>
+        </div>
 
-      </div>
+        <div class="meta">
+          <span>Hết hạn: ${escapeHtml(expiryText)}</span>
+        </div>
 
-      <div class="meta">
+        <div class="meta">
+          <span class="countdown"
+            data-expiry="${escapeHtml(k.duration_type === "permanent" ? "" : (k.expires_at || ""))}"
+            data-permanent="${k.duration_type === "permanent" ? "1" : "0"}">
+            ${escapeHtml(countdown(k))}
+          </span>
+        </div>
 
-        <span>Loại: ${escapeHtml(type)}</span>
+        ${k.note ? `<div class="meta">Ghi chú: ${escapeHtml(k.note)}</div>` : ""}
 
-        <span>Thiết bị: ${used}/${max}</span>
+        <div class="actions">
+          ${buttons}
 
-      </div>
+          <button
+            class="success small"
+            data-action="copy"
+            data-id="${escapeHtml(k.id)}">
+            ▣ Sao chép Key
+          </button>
 
-      <div class="meta">
-
-        <span>Tạo: ${escapeHtml(fmt(k.created_at))}</span>
-
-      </div>
-
-      <div class="meta">
-
-        <span>Kích hoạt: ${escapeHtml(fmt(k.activated_at))}</span>
-
-      </div>
-
-      <div class="meta">
-
-        <span>Hết hạn: ${escapeHtml(expiryText)}</span>
-
-      </div>
-
-      <div class="meta">
-
-        <span class="countdown" data-expiry="${escapeHtml(k.duration_type === "permanent" ? "" : (k.expires_at||""))}" data-permanent="${k.duration_type === "permanent" ? "1" : "0"}">${escapeHtml(countdown(k))}</span>
-
-      </div>
-
-      ${k.note ? `<div class="meta">Ghi chú: ${escapeHtml(k.note)}</div>` : ""}
-
-      <div class="actions">
-
-        ${buttons}
-
-        <button class="success small" data-action="copy" data-id="${escapeHtml(k.id)}">▣ Sao chép Key</button>
-
-        <button class="danger small" data-action="delete" data-id="${escapeHtml(k.id)}">✕ Xóa Key</button>
-
-      </div>
-
-    </article>`;
-
+          <button
+            class="danger small"
+            data-action="delete"
+            data-id="${escapeHtml(k.id)}">
+            ✕ Xóa Key
+          </button>
+        </div>
+      </article>
+    `;
   }).join("");
-
 }
 
-// SEARCH
-
+/* SEARCH */
 $("searchInput").addEventListener("input", renderKeys);
 
-// KEY ACTIONS
-
+/* KEY ACTIONS */
 $("keyList").addEventListener("click", async e => {
-
   const button = e.target.closest("button[data-action]");
-
   if (!button) return;
 
   const id = button.dataset.id;
-
   const action = button.dataset.action;
 
   if (
-
     action === "delete" &&
-
     !confirm("Bạn chắc chắn muốn xóa Key này? Thao tác không thể hoàn tác.")
-
   ) return;
 
   if (
-
     action === "lock" &&
-
     !confirm("Khóa Key này? Ứng dụng sẽ không thể xác thực Key sau khi khóa.")
-
   ) return;
 
   if (
-
     action === "unlock" &&
-
     !confirm("Mở khóa Key này?")
-
   ) return;
 
   if (action === "copy") {
-
     await copyExistingKey(id, button);
-
     return;
-
   }
 
   button.disabled = true;
 
   try {
-
     if (action === "delete") {
-
       await api(
-
         "/api/admin/keys/" + encodeURIComponent(id),
-
         {method:"DELETE"}
-
       );
-
     } else {
-
       await api(
-
         "/api/admin/keys/" + encodeURIComponent(id) + "/" + action,
-
         {
-
           method:"POST",
-
           body:"{}"
-
         }
-
       );
-
     }
 
     await loadKeys();
-
   } catch (err) {
-
     alert(err.message);
-
     button.disabled = false;
-
   }
-
 });
 
-// COUNTDOWN REFRESH
-
+/* COUNTDOWN REFRESH */
 setInterval(() => {
-
   document.querySelectorAll(".countdown").forEach(el => {
-
     if (el.dataset.permanent === "1") {
-
       el.textContent = "VĨNH VIỄN";
-
       return;
-
     }
 
     const expiry = el.dataset.expiry;
-
     if (!expiry) return;
 
     const diff = new Date(expiry).getTime() - Date.now();
 
     if (diff <= 0) {
-
       el.textContent = "Đã hết hạn";
-
       return;
-
     }
 
-    const sec = Math.floor(diff/1000);
+    const sec = Math.floor(diff / 1000);
+    const d = Math.floor(sec / 86400);
+    const h = Math.floor(sec % 86400 / 3600);
+    const m = Math.floor(sec % 3600 / 60);
+    const s = sec % 60;
 
-    const d = Math.floor(sec/86400);
-
-    const h = Math.floor(sec%86400/3600);
-
-    const m = Math.floor(sec%3600/60);
-
-    const s = sec%60;
-
-    el.textContent =
-
-      `${d} ngày ${h} giờ ${m} phút ${s} giây`;
-
+    el.textContent = `${d} ngày ${h} giờ ${m} phút ${s} giây`;
   });
-
 }, 1000);
 
-// KHÔNG TỰ ĐỘNG ĐĂNG NHẬP KHI MỞ TRANG
-
-// Luôn yêu cầu nhập tài khoản và mật khẩu.
-
+/* ALWAYS REQUIRE ADMIN LOGIN */
 showLogin();
-
 $("adminView").classList.add("hidden");
-
 $("loginView").classList.remove("hidden");
-
 $("durationType").dispatchEvent(new Event("change"));
-
 </script>
-
 </body>
-
 </html>
