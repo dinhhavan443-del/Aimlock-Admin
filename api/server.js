@@ -89,6 +89,7 @@ function encryptionKey() {
 
 function encryptKey(value) {
   const iv = crypto.randomBytes(12);
+
   const cipher = crypto.createCipheriv(
     "aes-256-gcm",
     encryptionKey(),
@@ -192,7 +193,8 @@ function clearSessionCookie(res) {
   );
 }
 
-/* Cookie parser */
+/* COOKIE PARSER */
+
 app.use((req, res, next) => {
   req.cookies = {};
 
@@ -370,7 +372,12 @@ app.post(
 
     try {
       const key = req.body?.key;
-      const deviceId = req.body?.deviceId || req.body?.device_id;
+      const rawDeviceId = req.body?.deviceId || req.body?.device_id;
+
+      const deviceId =
+        typeof rawDeviceId === "string"
+          ? rawDeviceId.trim()
+          : "";
 
       const deviceLabel =
         typeof req.body?.deviceLabel === "string"
@@ -381,7 +388,7 @@ app.post(
 
       if (
         typeof key !== "string" ||
-        key.length < 8 ||
+        key.trim().length < 8 ||
         key.length > 100
       ) {
         return res.status(400).json({
@@ -403,6 +410,7 @@ app.post(
 
       if (!result.rowCount) {
         await client.query("ROLLBACK");
+
         return res.status(404).json({
           success: false,
           message: "KEY không tồn tại"
@@ -413,6 +421,7 @@ app.post(
 
       if (license.status !== "active") {
         await client.query("ROLLBACK");
+
         return res.status(403).json({
           success: false,
           message: "KEY đã bị khóa"
@@ -424,6 +433,7 @@ app.post(
         new Date(license.expires_at) <= new Date()
       ) {
         await client.query("ROLLBACK");
+
         return res.status(403).json({
           success: false,
           message: "KEY đã hết hạn"
@@ -432,11 +442,11 @@ app.post(
 
       if (license.device_limit_enforced) {
         if (
-          typeof deviceId !== "string" ||
-          deviceId.trim().length < 8 ||
+          deviceId.length < 8 ||
           deviceId.length > 200
         ) {
           await client.query("ROLLBACK");
+
           return res.status(400).json({
             success: false,
             code: "DEVICE_ID_REQUIRED",
@@ -457,6 +467,7 @@ app.post(
         if (existing.rowCount) {
           if (existing.rows[0].status === "blocked") {
             await client.query("ROLLBACK");
+
             return res.status(403).json({
               success: false,
               code: "DEVICE_BLOCKED",
@@ -470,6 +481,7 @@ app.post(
              WHERE id = $1`,
             [existing.rows[0].id]
           );
+
         } else {
           const countResult = await client.query(
             `SELECT COUNT(*)::int AS total
@@ -478,10 +490,12 @@ app.post(
             [license.id]
           );
 
-          const used = countResult.rows[0].total;
+          const used = Number(countResult.rows[0].total);
+          const maxDevices = Number(license.max_devices);
 
-          if (used >= license.max_devices) {
+          if (used >= maxDevices) {
             await client.query("ROLLBACK");
+
             return res.status(403).json({
               success: false,
               code: "DEVICE_LIMIT_REACHED",
@@ -519,6 +533,8 @@ app.post(
 
       await client.query("COMMIT");
 
+      const devicesUsed = Number(countResult.rows[0].total);
+
       return res.json({
         success: true,
         message: "Xác thực KEY thành công",
@@ -527,8 +543,8 @@ app.post(
         activatedAt: activation.rows[0].activated_at,
         createdAt: license.created_at,
         expiresAt: license.expires_at,
-        devicesUsed: countResult.rows[0].total,
-        deviceCount: countResult.rows[0].total,
+        devicesUsed,
+        deviceCount: devicesUsed,
         maxDevices: license.max_devices,
         deviceLimit: license.max_devices,
         deviceLimitEnforced: license.device_limit_enforced
@@ -550,6 +566,7 @@ app.post(
 
 /* =========================
    ADMIN: LIST KEYS + DEVICES
+   ĐẾM TRỰC TIẾP TỪ DATABASE
 ========================= */
 
 app.get("/api/admin/keys", adminOnly, async (req, res) => {
@@ -568,36 +585,46 @@ app.get("/api/admin/keys", adminOnly, async (req, res) => {
          k.max_devices,
          (k.encrypted_key IS NOT NULL) AS can_copy,
 
-         COUNT(d.id)::int AS devices_used,
+         COALESCE(d.devices_used, 0)::int AS devices_used,
 
-         COALESCE(
-           json_agg(
-             json_build_object(
-               'id', d.id,
-               'deviceHint', d.device_hint,
-               'status', d.status,
-               'firstSeenAt', d.first_seen_at,
-               'lastSeenAt', d.last_seen_at
-             )
-             ORDER BY d.first_seen_at
-           ) FILTER (WHERE d.id IS NOT NULL),
-           '[]'::json
-         ) AS devices
+         COALESCE(d.devices, '[]'::json) AS devices
 
        FROM license_keys k
-       LEFT JOIN license_devices d ON d.license_id = k.id
-       GROUP BY k.id
+
+       LEFT JOIN LATERAL (
+         SELECT
+           COUNT(*)::int AS devices_used,
+
+           COALESCE(
+             json_agg(
+               json_build_object(
+                 'id', ld.id,
+                 'deviceHint', ld.device_hint,
+                 'status', ld.status,
+                 'firstSeenAt', ld.first_seen_at,
+                 'lastSeenAt', ld.last_seen_at
+               )
+               ORDER BY ld.first_seen_at
+             ),
+             '[]'::json
+           ) AS devices
+
+         FROM license_devices ld
+         WHERE ld.license_id = k.id
+       ) d ON TRUE
+
        ORDER BY k.created_at DESC`
     );
 
-    res.json({
+    return res.json({
       success: true,
       keys: result.rows
     });
+
   } catch (error) {
     console.error("List keys error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Không tải được danh sách Key"
     });
@@ -659,6 +686,7 @@ app.post(
         key = makeKey();
 
         const now = new Date();
+
         const expiresAt = type === "permanent"
           ? null
           : addDuration(now, type, amount);
@@ -684,6 +712,7 @@ app.post(
           );
 
           break;
+
         } catch (error) {
           if (error.code !== "23505" || attempt === 4) {
             throw error;
@@ -705,7 +734,7 @@ app.post(
     } catch (error) {
       console.error("Create key error:", error);
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: "Không tạo được Key"
       });
@@ -759,7 +788,7 @@ app.post(
     } catch (error) {
       console.error("Copy key error:", error);
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: "Không thể giải mã Key. Kiểm tra KEY_ENCRYPTION_SECRET."
       });
@@ -794,7 +823,7 @@ async function setKeyStatus(req, res, status) {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: status === "active" ? "Đã mở khóa Key" : "Đã khóa Key"
     });
@@ -802,7 +831,7 @@ async function setKeyStatus(req, res, status) {
   } catch (error) {
     console.error("Update key status error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Không cập nhật được Key"
     });
@@ -863,7 +892,7 @@ async function setDeviceStatus(req, res, status) {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: status === "active"
         ? "Đã mở khóa thiết bị"
@@ -873,7 +902,7 @@ async function setDeviceStatus(req, res, status) {
   } catch (error) {
     console.error("Device status error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Không cập nhật được thiết bị"
     });
@@ -893,6 +922,8 @@ app.post(
   adminOnly,
   (req, res) => setDeviceStatus(req, res, "active")
 );
+
+/* DELETE DEVICE: GIẢI PHÓNG LƯỢT */
 
 app.delete(
   "/api/admin/keys/:id/devices/:deviceId",
@@ -933,16 +964,16 @@ app.delete(
         [keyId]
       );
 
-      res.json({
+      return res.json({
         success: true,
         message: "Đã xóa thiết bị",
-        devicesUsed: count.rows[0].total
+        devicesUsed: Number(count.rows[0].total)
       });
 
     } catch (error) {
       console.error("Delete device error:", error);
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: "Không xóa được thiết bị"
       });
@@ -981,7 +1012,7 @@ app.delete(
         });
       }
 
-      res.json({
+      return res.json({
         success: true,
         message: "Đã xóa Key"
       });
@@ -989,7 +1020,7 @@ app.delete(
     } catch (error) {
       console.error("Delete key error:", error);
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: "Không xóa được Key"
       });
@@ -1051,7 +1082,6 @@ async function initDatabase() {
     )
   `);
 
-  /* Migration for existing device tables */
   await pool.query(`
     ALTER TABLE license_devices
     ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'
