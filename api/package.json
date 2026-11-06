@@ -1,9 +1,7 @@
-
 {
-  "name": "aimlock-admin",
+  "name": "aimlock-pedinhios-api",
   "version": "1.0.0",
   "private": true,
-  "description": "AIMLOCK PEDINHIOS Admin Panel",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

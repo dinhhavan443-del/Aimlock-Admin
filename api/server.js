@@ -63,6 +63,26 @@ function hashDeviceId(deviceId) {
     .digest("hex");
 }
 
+// Key gốc chỉ được lưu ở dạng mã hóa AES-256-GCM để Admin có thể sao chép.
+// Không lưu Key rõ trong database. Dùng KEY_ENCRYPTION_SECRET riêng trên Render.
+const KEY_ENCRYPTION_SECRET = process.env.KEY_ENCRYPTION_SECRET || KEY_HASH_SALT;
+function encryptionKey() {
+  return crypto.createHash("sha256").update(KEY_ENCRYPTION_SECRET).digest();
+}
+function encryptKey(value) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", encryptionKey(), iv);
+  const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
+  return [iv.toString("base64"), cipher.getAuthTag().toString("base64"), encrypted.toString("base64")].join(".");
+}
+function decryptKey(value) {
+  const [ivText, tagText, encryptedText] = String(value).split(".");
+  if (!ivText || !tagText || !encryptedText) throw new Error("Encrypted key is invalid");
+  const decipher = crypto.createDecipheriv("aes-256-gcm", encryptionKey(), Buffer.from(ivText, "base64"));
+  decipher.setAuthTag(Buffer.from(tagText, "base64"));
+  return Buffer.concat([decipher.update(Buffer.from(encryptedText, "base64")), decipher.final()]).toString("utf8");
+}
+
 function makeKey() {
   const raw = crypto.randomBytes(8).toString("hex").toUpperCase();
   return "AIM-" + raw.match(/.{1,4}/g).join("-");
@@ -96,22 +116,12 @@ function createSessionCookie(res, username) {
   const signature = crypto.createHmac("sha256", SESSION_SECRET)
     .update(payload)
     .digest("base64url");
-  res.cookie(COOKIE_NAME, payload + "." + signature, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/",
-    maxAge: SESSION_HOURS * 60 * 60 * 1000
-  });
+  const cookie = `${COOKIE_NAME}=${encodeURIComponent(payload + "." + signature)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_HOURS * 60 * 60}${process.env.NODE_ENV === "production" ? "; Secure" : ""}`;
+  res.setHeader("Set-Cookie", cookie);
 }
 
 function clearSessionCookie(res) {
-  res.clearCookie(COOKIE_NAME, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/"
-  });
+  res.setHeader("Set-Cookie", `${COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
 }
 
 function validSession(req) {
@@ -235,6 +245,9 @@ app.post(
     try {
       const key = req.body?.key;
       const deviceId = req.body?.deviceId || req.body?.device_id;
+      const deviceLabel = typeof req.body?.deviceLabel === "string"
+        ? req.body.deviceLabel.replace(/[^a-zA-Z0-9 _.-]/g, "").slice(0, 40)
+        : "Thiết bị";
 
       if (typeof key !== "string" || key.length < 8 || key.length > 100) {
         return res.status(400).json({
@@ -245,7 +258,8 @@ app.post(
 
       await client.query("BEGIN");
       const result = await client.query(
-        `SELECT id, status, expires_at, max_devices, device_limit_enforced
+        `SELECT id, status, expires_at, created_at, activated_at,
+                duration_type, max_devices, device_limit_enforced
          FROM license_keys
          WHERE key_hash = $1
          FOR UPDATE`,
@@ -304,8 +318,9 @@ app.post(
           await client.query(
             `INSERT INTO license_devices (license_id, device_hash, device_hint)
              VALUES ($1, $2, $3)`,
-            [license.id, deviceHash, "..." + deviceId.slice(-4)]
+            [license.id, deviceHash, deviceLabel + " · ..." + deviceId.slice(-4)]
           );
+
         } else {
           await client.query(
             `UPDATE license_devices
@@ -316,6 +331,12 @@ app.post(
         }
       }
 
+      const activationResult = await client.query(
+        `UPDATE license_keys SET activated_at = COALESCE(activated_at, NOW())
+         WHERE id = $1 RETURNING activated_at`,
+        [license.id]
+      );
+
       const countResult = await client.query(
         "SELECT COUNT(*)::int AS total FROM license_devices WHERE license_id = $1",
         [license.id]
@@ -325,9 +346,16 @@ app.post(
       return res.json({
         success: true,
         message: "Xác thực KEY thành công",
+        status: license.status,
+        durationType: license.duration_type,
+        activatedAt: activationResult.rows[0].activated_at,
+        createdAt: license.created_at,
         expiresAt: license.expires_at,
         devicesUsed: countResult.rows[0].total,
-        maxDevices: license.max_devices
+        deviceCount: countResult.rows[0].total,
+        maxDevices: license.max_devices,
+        deviceLimit: license.max_devices,
+        deviceLimitEnforced: license.device_limit_enforced
       });
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
@@ -344,8 +372,14 @@ app.get("/api/admin/keys", adminOnly, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT k.id, k.key_hint, k.status, k.expires_at, k.created_at,
-              k.note, k.duration_type, k.duration_value, k.max_devices,
-              COUNT(d.id)::int AS devices_used
+              k.activated_at, k.note, k.duration_type, k.duration_value,
+              k.max_devices, (k.encrypted_key IS NOT NULL) AS can_copy,
+              COUNT(d.id)::int AS devices_used,
+              COALESCE(json_agg(json_build_object(
+                'deviceHint', d.device_hint,
+                'firstSeenAt', d.first_seen_at,
+                'lastSeenAt', d.last_seen_at
+              ) ORDER BY d.first_seen_at) FILTER (WHERE d.id IS NOT NULL), '[]'::json) AS devices
        FROM license_keys k
        LEFT JOIN license_devices d ON d.license_id = k.id
        GROUP BY k.id
@@ -386,13 +420,14 @@ app.post("/api/admin/keys", sameOriginOnly, adminOnly, async (req, res) => {
       try {
         inserted = await pool.query(
           `INSERT INTO license_keys
-           (key_hash, key_hint, status, expires_at, note, duration_type,
+           (key_hash, key_hint, encrypted_key, status, expires_at, note, duration_type,
             duration_value, max_devices, device_limit_enforced)
-           VALUES ($1, $2, 'active', $3, $4, $5, $6, $7, TRUE)
+           VALUES ($1, $2, $3, 'active', $4, $5, $6, $7, $8, TRUE)
            RETURNING id, created_at, expires_at`,
           [
             hashKey(key),
             "****-" + key.slice(-4),
+            encryptKey(key),
             expiresAt,
             note,
             type,
@@ -419,6 +454,20 @@ app.post("/api/admin/keys", sameOriginOnly, adminOnly, async (req, res) => {
   } catch (error) {
     console.error("Create key error:", error);
     res.status(500).json({ success: false, message: "Không tạo được Key" });
+  }
+});
+
+app.post("/api/admin/keys/:id/copy", sameOriginOnly, adminOnly, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ success: false, message: "ID không hợp lệ" });
+    const result = await pool.query("SELECT encrypted_key FROM license_keys WHERE id = $1", [id]);
+    if (!result.rowCount) return res.status(404).json({ success: false, message: "Không tìm thấy Key" });
+    if (!result.rows[0].encrypted_key) return res.status(409).json({ success: false, message: "Key này được tạo từ phiên bản cũ và chỉ lưu mã băm nên không thể khôi phục để sao chép. Key vẫn xác thực bình thường." });
+    return res.json({ success: true, key: decryptKey(result.rows[0].encrypted_key) });
+  } catch (error) {
+    console.error("Copy key error:", error);
+    return res.status(500).json({ success: false, message: "Không thể giải mã Key. Kiểm tra KEY_ENCRYPTION_SECRET." });
   }
 });
 
@@ -483,8 +532,10 @@ async function initDatabase() {
       note TEXT,
       duration_type TEXT NOT NULL DEFAULT 'days',
       duration_value INTEGER,
+      activated_at TIMESTAMPTZ,
+      encrypted_key TEXT,
       max_devices INTEGER NOT NULL DEFAULT 1,
-      device_limit_enforced BOOLEAN NOT NULL DEFAULT FALSE
+      device_limit_enforced BOOLEAN NOT NULL DEFAULT TRUE
     )
   `);
 
@@ -494,9 +545,14 @@ async function initDatabase() {
       ALTER COLUMN expires_at DROP NOT NULL,
       ADD COLUMN IF NOT EXISTS duration_type TEXT NOT NULL DEFAULT 'days',
       ADD COLUMN IF NOT EXISTS duration_value INTEGER,
+      ADD COLUMN IF NOT EXISTS activated_at TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS encrypted_key TEXT,
       ADD COLUMN IF NOT EXISTS max_devices INTEGER NOT NULL DEFAULT 1,
-      ADD COLUMN IF NOT EXISTS device_limit_enforced BOOLEAN NOT NULL DEFAULT FALSE
+      ADD COLUMN IF NOT EXISTS device_limit_enforced BOOLEAN NOT NULL DEFAULT TRUE
   `);
+
+  // Các Key cũ cũng được áp dụng giới hạn thiết bị; max_devices cũ mặc định là 1.
+  await pool.query(`UPDATE license_keys SET device_limit_enforced = TRUE WHERE device_limit_enforced = FALSE`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS license_devices (
