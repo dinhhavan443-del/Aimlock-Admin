@@ -142,7 +142,6 @@
     }
     .notice { font-size:11px;color:var(--muted);line-height:1.6;margin-top:14px; }
 
-    /* DEVICE LIST */
     .deviceBox {
       margin-top:14px;
       padding:12px;
@@ -406,9 +405,7 @@ async function api(url, options={}) {
   return data;
 }
 
-/* =========================
-   LOGIN VIEW
-========================= */
+/* LOGIN VIEW */
 
 function showLogin() {
   $("adminView").classList.add("hidden");
@@ -421,9 +418,7 @@ function showAdmin() {
   loadKeys();
 }
 
-/* =========================
-   RESTORE SESSION
-========================= */
+/* RESTORE SESSION */
 
 async function restoreSession() {
   showLogin();
@@ -441,9 +436,7 @@ async function restoreSession() {
   }
 }
 
-/* =========================
-   LOGIN
-========================= */
+/* LOGIN */
 
 $("loginForm").addEventListener("submit", async e => {
   e.preventDefault();
@@ -470,9 +463,7 @@ $("loginForm").addEventListener("submit", async e => {
   }
 });
 
-/* =========================
-   LOGOUT
-========================= */
+/* LOGOUT */
 
 $("logoutButton").addEventListener("click", async () => {
   if (!confirm("Bạn muốn đăng xuất khỏi Admin?")) return;
@@ -501,15 +492,11 @@ $("logoutButton").addEventListener("click", async () => {
   }
 });
 
-/* =========================
-   REFRESH
-========================= */
+/* REFRESH */
 
 $("refreshButton").addEventListener("click", loadKeys);
 
-/* =========================
-   DURATION
-========================= */
+/* DURATION */
 
 $("durationType").addEventListener("change", () => {
   const type = $("durationType").value;
@@ -522,9 +509,7 @@ $("durationType").addEventListener("change", () => {
     "Nhập số " + (typeNames[type] || "") + " muốn sử dụng.";
 });
 
-/* =========================
-   CREATE KEY
-========================= */
+/* CREATE KEY */
 
 $("createForm").addEventListener("submit", async e => {
   e.preventDefault();
@@ -599,9 +584,7 @@ $("createForm").addEventListener("submit", async e => {
   }
 });
 
-/* =========================
-   COPY TEXT
-========================= */
+/* COPY TEXT */
 
 async function copyText(value) {
   if (navigator.clipboard && window.isSecureContext) {
@@ -629,6 +612,7 @@ async function copyText(value) {
 }
 
 /* COPY NEW KEY */
+
 $("copyKeyButton").addEventListener("click", async () => {
   if (!lastCreatedKey) return;
 
@@ -649,6 +633,7 @@ $("copyKeyButton").addEventListener("click", async () => {
 });
 
 /* COPY OLD KEY */
+
 async function copyExistingKey(id, button) {
   const oldText = button.textContent;
   button.disabled = true;
@@ -680,9 +665,7 @@ async function copyExistingKey(id, button) {
   }
 }
 
-/* =========================
-   KEY STATUS / COUNTDOWN
-========================= */
+/* KEY STATUS / COUNTDOWN */
 
 function effectiveStatus(k) {
   if (k.status !== "active") return k.status;
@@ -715,16 +698,12 @@ function countdown(k) {
   return `${days} ngày ${hours} giờ ${mins} phút ${seconds} giây`;
 }
 
-/* =========================
-   LOAD KEYS
-========================= */
+/* LOAD KEYS */
 
 async function loadKeys() {
   if (loadingKeys) return;
 
   loadingKeys = true;
-  $("keyList").innerHTML =
-    '<div class="empty">Đang tải...</div>';
 
   try {
     const data = await api("/api/admin/keys");
@@ -738,21 +717,37 @@ async function loadKeys() {
   }
 }
 
-/* =========================
-   RENDER DEVICE LIST
-========================= */
+/* DEVICE COUNT */
+
+function deviceCount(k) {
+  const value = Number(k.devices_used);
+
+  if (Number.isFinite(value) && value >= 0) {
+    return value;
+  }
+
+  return Array.isArray(k.devices) ? k.devices.length : 0;
+}
+
+/* RENDER DEVICE LIST */
 
 function renderDevices(k) {
   const devices = Array.isArray(k.devices) ? k.devices : [];
+  const used = deviceCount(k);
+  const max = Number(k.max_devices || 1);
 
   if (!devices.length) {
     return `
       <div class="deviceBox">
         <div class="deviceTitle">
           <span>📱 THIẾT BỊ ĐÃ KÍCH HOẠT</span>
-          <span>0/${Number(k.max_devices || 1)}</span>
+          <span>${used}/${max}</span>
         </div>
-        <div class="deviceEmpty">Key này chưa có thiết bị kích hoạt.</div>
+        <div class="deviceEmpty">
+          ${used > 0
+            ? "Database đang báo có thiết bị nhưng chưa nhận được danh sách thiết bị."
+            : "Key này chưa có thiết bị kích hoạt."}
+        </div>
       </div>
     `;
   }
@@ -761,7 +756,7 @@ function renderDevices(k) {
     <div class="deviceBox">
       <div class="deviceTitle">
         <span>📱 THIẾT BỊ ĐÃ KÍCH HOẠT</span>
-        <span>${devices.length}/${Number(k.max_devices || 1)}</span>
+        <span>${used}/${max}</span>
       </div>
 
       ${devices.map((d, index) => {
@@ -828,9 +823,7 @@ function renderDevices(k) {
   `;
 }
 
-/* =========================
-   RENDER KEYS
-========================= */
+/* RENDER KEYS */
 
 function renderKeys() {
   const active = keys.filter(
@@ -872,7 +865,7 @@ function renderKeys() {
       "Đã khóa";
 
     const type = typeNames[k.duration_type] || "Key";
-    const used = Number(k.devices_used || 0);
+    const used = deviceCount(k);
     const max = Number(k.max_devices || 1);
 
     const expiryText = k.duration_type === "permanent"
@@ -970,15 +963,11 @@ function renderKeys() {
   }).join("");
 }
 
-/* =========================
-   SEARCH
-========================= */
+/* SEARCH */
 
 $("searchInput").addEventListener("input", renderKeys);
 
-/* =========================
-   KEY + DEVICE ACTIONS
-========================= */
+/* KEY + DEVICE ACTIONS */
 
 $("keyList").addEventListener("click", async e => {
   const button = e.target.closest("button[data-action]");
@@ -986,13 +975,11 @@ $("keyList").addEventListener("click", async e => {
 
   const action = button.dataset.action;
 
-  /* Copy existing key */
   if (action === "copy") {
     await copyExistingKey(button.dataset.id, button);
     return;
   }
 
-  /* Device operations */
   if (action.startsWith("device-")) {
     const keyId = button.dataset.keyId;
     const deviceId = button.dataset.deviceId;
@@ -1001,16 +988,12 @@ $("keyList").addEventListener("click", async e => {
 
     if (
       action === "device-delete" &&
-      !confirm(
-        "Xóa thiết bị này khỏi Key? Lượt thiết bị sẽ được giải phóng."
-      )
+      !confirm("Xóa thiết bị này khỏi Key? Lượt thiết bị sẽ được giải phóng.")
     ) return;
 
     if (
       action === "device-block" &&
-      !confirm(
-        "Khóa thiết bị này? Thiết bị sẽ không thể xác thực Key."
-      )
+      !confirm("Khóa thiết bị này? Thiết bị sẽ không thể xác thực Key.")
     ) return;
 
     if (
@@ -1051,7 +1034,6 @@ $("keyList").addEventListener("click", async e => {
     return;
   }
 
-  /* Key operations */
   const id = button.dataset.id;
 
   if (
@@ -1095,9 +1077,7 @@ $("keyList").addEventListener("click", async e => {
   }
 });
 
-/* =========================
-   COUNTDOWN REFRESH
-========================= */
+/* COUNTDOWN REFRESH */
 
 setInterval(() => {
   document.querySelectorAll(".countdown").forEach(el => {
@@ -1127,13 +1107,21 @@ setInterval(() => {
   });
 }, 1000);
 
-/* =========================
-   START
-========================= */
+/* AUTO REFRESH DEVICE COUNT */
+
+setInterval(() => {
+  if (
+    !$("adminView").classList.contains("hidden") &&
+    !document.hidden
+  ) {
+    loadKeys();
+  }
+}, 10000);
+
+/* START */
 
 $("durationType").dispatchEvent(new Event("change"));
 restoreSession();
-
 </script>
 </body>
 </html>
