@@ -4,128 +4,645 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090713">
 <title>AIMLOCK PEDINHIOS ADMIN</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#090713;color:#eee;font-family:Arial,sans-serif;padding:22px}
-main{max-width:900px;margin:auto}
-h1{color:#b78aff;text-shadow:0 0 15px #8c39ff}
-.card{background:#19112a;border:1px solid #56317d;border-radius:15px;padding:18px;margin:16px 0}
-input,button{padding:12px;border-radius:9px;border:1px solid #65428b;margin:5px 0;font-size:15px}
-input{background:#100b1c;color:white;width:100%}
-button{background:#8538dc;color:white;font-weight:bold;cursor:pointer}
-button.danger{background:#a52b46}
-.row{display:flex;gap:10px;flex-wrap:wrap}
-.row>*{flex:1;min-width:120px}
-#message{color:#65ff9b;white-space:pre-wrap}
-.item{border-top:1px solid #49345f;padding:12px 0;overflow-wrap:anywhere}
+body{margin:0;background:#090713;color:#eee;font-family:Arial,sans-serif;padding:18px}
+main{max-width:1000px;margin:auto}
+h1{color:#d3a6ff;text-shadow:0 0 15px #8c39ff;margin-bottom:5px}
+h3{color:#d8b7ff;margin-top:0}
+.sub{color:#ad96c7;margin-top:0}
+.card{background:linear-gradient(145deg,#1b1230,#100b1d);border:1px solid #56317d;border-radius:16px;padding:18px;margin:16px 0;box-shadow:0 0 18px #5c22a51c}
+input,select,button{padding:12px;border-radius:9px;border:1px solid #65428b;margin:5px 0;font-size:14px}
+input,select{background:#100b1c;color:white;width:100%;outline:none}
+button{background:linear-gradient(135deg,#a34cff,#7024c9);color:white;font-weight:bold;cursor:pointer}
+button:active{transform:scale(.98)}
+button.danger{background:linear-gradient(135deg,#d83b63,#92213f)}
+button.secondary{background:#332344}
+button.copy{background:linear-gradient(135deg,#087f9c,#07516c)}
+button.success{background:linear-gradient(135deg,#159b68,#08744c)}
+.row{display:flex;gap:9px;flex-wrap:wrap}
+.row>*{flex:1;min-width:130px}
+#message{color:#70ffb0;white-space:pre-wrap;overflow-wrap:anywhere}
+.item{border:1px solid #49345f;border-radius:12px;padding:14px;margin:12px 0;background:#100b1d;overflow-wrap:anywhere}
+.item b{color:#d9b4ff}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:12px 0}
+.meta div{background:#1c1430;padding:9px;border-radius:8px;color:#d9c9eb;font-size:13px}
+.meta strong{display:block;color:#a77bff;margin-bottom:4px}
+.actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.actions button{flex:1;min-width:105px}
+.status{font-weight:bold}
+.active{color:#5dffab}
+.locked{color:#ff8297}
+.hidden{display:none}
 small{color:#bba9d1}
+hr{border:0;border-top:1px solid #49345f;margin:15px 0}
+@media(max-width:520px){
+ body{padding:10px}
+ .card{padding:14px}
+ .actions button{min-width:100%;margin:2px 0}
+}
 </style>
 </head>
 <body>
 <main>
-<h1>⚡ AIMLOCK PEDINHIOS</h1>
-<p>KEY MANAGEMENT SYSTEM</p>
 
-<section class="card">
-<h3>Đăng nhập quản trị</h3>
-<input id="api" placeholder="Địa chỉ API, ví dụ https://ten-app.onrender.com">
-<input id="token" type="password" placeholder="ADMIN_TOKEN">
-<button onclick="loadKeys()">Đăng nhập</button>
+<h1>⚡ AIMLOCK PEDINHIOS</h1>
+<p class="sub">ADMIN KEY MANAGEMENT SYSTEM</p>
+
+<!-- LOGIN -->
+<section class="card" id="loginCard">
+<h3>🔐 ĐĂNG NHẬP QUẢN TRỊ</h3>
+
+<input id="username" autocomplete="username"
+placeholder="Tên tài khoản Admin">
+
+<input id="password" type="password"
+autocomplete="current-password"
+placeholder="Mật khẩu Admin">
+
+<button onclick="login()">🔐 ĐĂNG NHẬP</button>
+
 <p id="message"></p>
 </section>
 
-<section class="card">
-<h3>➕ Tạo KEY mới</h3>
-<input id="days" type="number" min="1" max="3650" value="30" placeholder="Số ngày">
-<input id="note" placeholder="Ghi chú KEY">
-<button onclick="createKey()">Tạo KEY</button>
-<div id="newKey"></div>
-</section>
+<!-- ADMIN PANEL -->
+<section class="card hidden" id="adminPanel">
 
-<section class="card">
-<h3>📋 Danh sách KEY</h3>
-<button onclick="loadKeys()">Làm mới danh sách</button>
-<div id="keys"></div>
+<div class="row" style="align-items:center">
+<div>
+<h3>👑 BẢNG ĐIỀU KHIỂN ADMIN</h3>
+<small>Quản lý KEY và thiết bị</small>
+</div>
+<button class="danger" style="max-width:150px"
+onclick="logout()">ĐĂNG XUẤT</button>
+</div>
+
+<hr>
+
+<!-- CREATE KEY -->
+<h3>➕ TẠO KEY MỚI</h3>
+
+<label>Loại thời hạn</label>
+<select id="durationType" onchange="durationChanged()">
+<option value="hours">Giờ</option>
+<option value="days" selected>Ngày</option>
+<option value="weeks">Tuần</option>
+<option value="months">Tháng</option>
+<option value="years">Năm</option>
+<option value="permanent">Vĩnh viễn (VV)</option>
+</select>
+
+<div id="durationValueBox">
+<label>Số lượng thời hạn</label>
+<input id="durationValue" type="number"
+min="1" value="30">
+</div>
+
+<label>Giới hạn thiết bị</label>
+<input id="maxDevices" type="number"
+min="1" max="100" value="1">
+
+<label>Ghi chú KEY</label>
+<input id="note" maxlength="200"
+placeholder="Tên người dùng hoặc ghi chú">
+
+<button class="success" onclick="createKey()">
+➕ TẠO KEY
+</button>
+
+<div id="newKey"></div>
+
+<hr>
+
+<!-- KEY LIST -->
+<h3>📋 DANH SÁCH KEY</h3>
+
+<button onclick="loadKeys()">🔄 LÀM MỚI DANH SÁCH</button>
+
+<div id="keys">
+<small>Chưa tải danh sách KEY.</small>
+</div>
+
 </section>
 </main>
 
 <script>
 const $ = id => document.getElementById(id);
-const api = () => $('api').value.trim().replace(/\/+$/,'');
-const headers = () => ({
-  'Content-Type':'application/json',
-  'Authorization':'Bearer '+$('token').value
-});
 
-async function request(path, options={}) {
+let loggedIn = false;
+
+// API tự động dùng cùng domain website
+function api(){
+  return window.location.origin;
+}
+
+// Không cần ADMIN_TOKEN ở giao diện.
+// Session được xác thực bằng cookie HttpOnly.
+function authHeaders(){
+  return {
+    'Content-Type':'application/json'
+  };
+}
+
+async function request(path,options={}){
   const response = await fetch(api()+path,{
     ...options,
-    headers:{...headers(),...(options.headers||{})}
+    credentials:'include',
+    headers:{
+      ...authHeaders(),
+      ...(options.headers||{})
+    }
   });
-  const data = await response.json();
-  if(!response.ok) throw new Error(data.message || 'Có lỗi xảy ra');
+
+  let data={};
+
+  try{
+    data=await response.json();
+  }catch(e){}
+
+  if(!response.ok){
+    if(response.status===401) loggedIn=false;
+    throw new Error(
+      data.message || 'Yêu cầu thất bại: HTTP '+response.status
+    );
+  }
+
   return data;
 }
 
+function showMessage(message,error=false){
+  $('message').textContent=message;
+  $('message').style.color=
+    error?'#ff8297':'#70ffb0';
+}
+
+// LOGIN
+async function login(){
+  try{
+    const username=$('username').value.trim();
+    const password=$('password').value;
+
+    if(!username||!password){
+      throw new Error('Vui lòng nhập tài khoản và mật khẩu');
+    }
+
+    await request('/api/admin/login',{
+      method:'POST',
+      body:JSON.stringify({
+        username,
+        password
+      })
+    });
+
+    loggedIn=true;
+
+    $('loginCard').classList.add('hidden');
+    $('adminPanel').classList.remove('hidden');
+
+    showMessage('✅ Đăng nhập thành công');
+
+    await loadKeys();
+
+  }catch(e){
+    showMessage('❌ '+e.message,true);
+  }
+}
+
+// CHECK EXISTING SESSION
+async function checkSession(){
+  try{
+    await request('/api/admin/session');
+
+    loggedIn=true;
+
+    $('loginCard').classList.add('hidden');
+    $('adminPanel').classList.remove('hidden');
+
+    await loadKeys();
+
+  }catch(e){
+    loggedIn=false;
+  }
+}
+
+// LOGOUT
+async function logout(){
+  try{
+    await request('/api/admin/logout',{
+      method:'POST'
+    });
+  }catch(e){}
+
+  loggedIn=false;
+
+  $('adminPanel').classList.add('hidden');
+  $('loginCard').classList.remove('hidden');
+
+  $('password').value='';
+  $('keys').innerHTML='';
+
+  showMessage('Đã đăng xuất');
+}
+
+// DURATION
+function durationChanged(){
+  const type=$('durationType').value;
+
+  $('durationValueBox').classList.toggle(
+    'hidden',
+    type==='permanent'
+  );
+}
+
+// DATE
+function formatDate(value){
+  if(!value) return 'Chưa kích hoạt';
+
+  const date=new Date(value);
+
+  if(Number.isNaN(date.getTime())){
+    return 'Không có dữ liệu';
+  }
+
+  return date.toLocaleString('vi-VN');
+}
+
+// SAFE TEXT
+function escapeText(value){
+  return String(value??'').replace(/[&<>"']/g,c=>({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  })[c]);
+}
+
+// DURATION LABEL
+function durationLabel(type,value){
+  if(type==='permanent'){
+    return 'VĨNH VIỄN';
+  }
+
+  const labels={
+    hours:'giờ',
+    days:'ngày',
+    weeks:'tuần',
+    months:'tháng',
+    years:'năm'
+  };
+
+  return (value??'—')+' '+(labels[type]||type||'');
+}
+
+// EXPIRY
+function expiryLabel(key){
+  if(key.duration_type==='permanent'){
+    return 'VĨNH VIỄN';
+  }
+
+  if(!key.expires_at){
+    return 'Chưa có dữ liệu';
+  }
+
+  return formatDate(key.expires_at);
+}
+
+// DEVICE COUNT
+function deviceCount(key){
+  const used=Number(
+    key.devices_used ??
+    key.device_count ??
+    (Array.isArray(key.devices)?key.devices.length:0)
+  );
+
+  const limit=key.max_devices??key.device_limit??1;
+
+  return used+'/'+limit;
+}
+
+// RENDER KEY
+function renderKey(key){
+  const item=document.createElement('div');
+  item.className='item';
+
+  const status=key.status||'unknown';
+
+  const statusClass=
+    status==='active'?'active':'locked';
+
+  const title=document.createElement('div');
+
+  title.innerHTML=
+    '<b>🔑 KEY '+escapeText(key.key_hint||'Không rõ')+'</b>';
+
+  const meta=document.createElement('div');
+  meta.className='meta';
+
+  meta.innerHTML=`
+    <div>
+      <strong>TRẠNG THÁI</strong>
+      <span class="status ${statusClass}">
+        ${escapeText(status.toUpperCase())}
+      </span>
+    </div>
+
+    <div>
+      <strong>THỜI HẠN</strong>
+      ${escapeText(durationLabel(
+        key.duration_type,
+        key.duration_value
+      ))}
+    </div>
+
+    <div>
+      <strong>NGÀY TẠO</strong>
+      ${escapeText(formatDate(key.created_at))}
+    </div>
+
+    <div>
+      <strong>NGÀY KÍCH HOẠT</strong>
+      ${escapeText(formatDate(key.activated_at))}
+    </div>
+
+    <div>
+      <strong>NGÀY HẾT HẠN</strong>
+      ${escapeText(expiryLabel(key))}
+    </div>
+
+    <div>
+      <strong>THIẾT BỊ ĐÃ DÙNG</strong>
+      ${escapeText(deviceCount(key))}
+    </div>
+  `;
+
+  const note=document.createElement('small');
+  note.textContent=
+    'Ghi chú: '+(key.note||'Không có ghi chú');
+
+  const actions=document.createElement('div');
+  actions.className='actions';
+
+  // COPY
+  const copy=document.createElement('button');
+  copy.className='copy';
+  copy.textContent='📋 SAO CHÉP';
+
+  copy.onclick=()=>{
+    copyKey(key.id,copy);
+  };
+
+  // LOCK / UNLOCK
+  const toggle=document.createElement('button');
+
+  if(status==='active'){
+    toggle.className='danger';
+    toggle.textContent='🔒 KHÓA KEY';
+
+    toggle.onclick=()=>{
+      changeStatus(key.id,'lock');
+    };
+
+  }else{
+    toggle.className='success';
+    toggle.textContent='🔓 MỞ KHÓA';
+
+    toggle.onclick=()=>{
+      changeStatus(key.id,'unlock');
+    };
+  }
+
+  // DELETE
+  const del=document.createElement('button');
+  del.className='danger';
+  del.textContent='🗑 XÓA KEY';
+
+  del.onclick=()=>{
+    deleteKey(key.id);
+  };
+
+  actions.append(copy,toggle,del);
+
+  item.append(title,meta,note,actions);
+
+  // DEVICES
+  if(Array.isArray(key.devices)&&key.devices.length){
+
+    const deviceBox=document.createElement('div');
+    deviceBox.style.marginTop='12px';
+
+    const heading=document.createElement('small');
+    heading.textContent='📱 THIẾT BỊ ĐÃ ĐĂNG KÝ';
+
+    deviceBox.appendChild(heading);
+
+    key.devices.forEach((device,index)=>{
+
+      const line=document.createElement('div');
+
+      line.style.cssText=
+        'font-size:12px;color:#cbb9df;margin-top:7px';
+
+      line.textContent=
+        (index+1)+'. '+
+        (device.deviceLabel||device.deviceHint||'Thiết bị')+
+        ' | Lần đầu: '+formatDate(device.firstSeenAt)+
+        ' | Gần nhất: '+formatDate(device.lastSeenAt);
+
+      deviceBox.appendChild(line);
+    });
+
+    item.appendChild(deviceBox);
+  }
+
+  return item;
+}
+
+// LOAD KEYS
 async function loadKeys(){
   try{
     const data=await request('/api/admin/keys');
-    $('keys').innerHTML='';
-    data.keys.forEach(k=>{
-      const item=document.createElement('div');
-      item.className='item';
-      const title=document.createElement('b');
-      title.textContent='KEY '+k.key_hint;
-      const details=document.createElement('p');
-      details.textContent='Trạng thái: '+k.status+
-        ' | Hết hạn: '+new Date(k.expires_at).toLocaleString('vi-VN');
-      const note=document.createElement('small');
-      note.textContent=k.note || 'Không có ghi chú';
-      item.append(title,details,note);
-      if(k.status==='active'){
-        const btn=document.createElement('button');
-        btn.className='danger';
-        btn.textContent='Khóa KEY';
-        btn.onclick=()=>revokeKey(k.id);
-        item.appendChild(btn);
-      }
-      $('keys').appendChild(item);
-    });
-    $('message').textContent='✅ Kết nối thành công';
+
+    const container=$('keys');
+    container.innerHTML='';
+
+    if(!Array.isArray(data.keys)||data.keys.length===0){
+      container.textContent='Chưa có KEY nào.';
+    }else{
+      data.keys.forEach(key=>{
+        container.appendChild(renderKey(key));
+      });
+    }
+
+    showMessage(
+      '✅ Đã tải '+(data.keys?.length||0)+' KEY'
+    );
+
   }catch(e){
-    $('message').textContent='❌ '+e.message;
+    showMessage('❌ '+e.message,true);
   }
 }
 
+// CREATE KEY
 async function createKey(){
   try{
-    const days=Number($('days').value);
-    if(!Number.isInteger(days)||days<1||days>3650)
-      throw new Error('Số ngày phải từ 1 đến 3650');
+    const type=$('durationType').value;
+
+    const amount=Number(
+      $('durationValue').value
+    );
+
+    const maxDevices=Number(
+      $('maxDevices').value
+    );
+
+    if(
+      type!=='permanent' &&
+      (!Number.isInteger(amount)||amount<1)
+    ){
+      throw new Error(
+        'Thời hạn phải là số nguyên lớn hơn 0'
+      );
+    }
+
+    if(
+      !Number.isInteger(maxDevices)||
+      maxDevices<1||
+      maxDevices>100
+    ){
+      throw new Error(
+        'Giới hạn thiết bị phải từ 1 đến 100'
+      );
+    }
+
+    const body={
+      durationType:type,
+      durationValue:
+        type==='permanent'?null:amount,
+      maxDevices,
+      note:$('note').value.trim()
+    };
+
     const data=await request('/api/admin/keys',{
       method:'POST',
-      body:JSON.stringify({days,note:$('note').value})
+      body:JSON.stringify(body)
     });
-    $('newKey').textContent='KEY mới: '+data.key+
-      ' (Hãy lưu lại, chỉ hiển thị một lần)';
-    $('message').textContent='✅ Đã tạo KEY';
+
+    if(!data.key){
+      throw new Error('Server không trả về KEY');
+    }
+
+    $('newKey').textContent=
+      'KEY MỚI: '+data.key;
+
+    try{
+      await navigator.clipboard.writeText(data.key);
+
+      $('newKey').textContent+=
+        ' — Đã sao chép vào clipboard';
+
+    }catch(e){
+      $('newKey').textContent+=
+        ' — Hãy sao chép và lưu KEY này';
+    }
+
+    showMessage('✅ Tạo KEY thành công');
+
     await loadKeys();
+
   }catch(e){
-    $('message').textContent='❌ '+e.message;
+    showMessage('❌ '+e.message,true);
   }
 }
 
-async function revokeKey(id){
-  if(!confirm('Bạn có chắc muốn khóa KEY này?'))return;
+// COPY KEY
+async function copyKey(id,button){
   try{
-    await request('/api/admin/keys/'+id+'/revoke',{method:'POST'});
-    $('message').textContent='✅ Đã khóa KEY';
-    await loadKeys();
+    const data=await request(
+      '/api/admin/keys/'+encodeURIComponent(id)+'/copy',
+      {method:'POST'}
+    );
+
+    if(!data.key){
+      throw new Error('Server không trả về KEY');
+    }
+
+    await navigator.clipboard.writeText(data.key);
+
+    const old=button.textContent;
+
+    button.textContent='✅ ĐÃ SAO CHÉP';
+
+    setTimeout(()=>{
+      button.textContent=old;
+    },1800);
+
+    showMessage('✅ Đã sao chép KEY');
+
   }catch(e){
-    $('message').textContent='❌ '+e.message;
+    showMessage(
+      '❌ Không sao chép được: '+e.message,
+      true
+    );
   }
 }
+
+// LOCK / UNLOCK
+async function changeStatus(id,action){
+
+  const question=
+    action==='lock'
+    ?'Bạn chắc chắn muốn khóa KEY này?'
+    :'Bạn muốn mở khóa KEY này?';
+
+  if(!confirm(question)) return;
+
+  try{
+    await request(
+      '/api/admin/keys/'+encodeURIComponent(id)+'/'+action,
+      {method:'POST'}
+    );
+
+    showMessage(
+      action==='lock'
+      ?'✅ Đã khóa KEY'
+      :'✅ Đã mở khóa KEY'
+    );
+
+    await loadKeys();
+
+  }catch(e){
+    showMessage('❌ '+e.message,true);
+  }
+}
+
+// DELETE
+async function deleteKey(id){
+
+  if(!confirm(
+    '⚠️ XÓA KEY NÀY VĨNH VIỄN? Thao tác không thể hoàn tác.'
+  )) return;
+
+  try{
+    await request(
+      '/api/admin/keys/'+encodeURIComponent(id),
+      {method:'DELETE'}
+    );
+
+    showMessage('✅ Đã xóa KEY');
+
+    await loadKeys();
+
+  }catch(e){
+    showMessage('❌ '+e.message,true);
+  }
+}
+
+// INIT
+durationChanged();
+checkSession();
 </script>
 </body>
 </html>
