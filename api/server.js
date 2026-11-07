@@ -582,6 +582,26 @@ app.delete("/api/admin/keys/:id/devices/:deviceId", sameOriginOnly, adminOnly, a
   }
 });
 
+app.delete("/api/admin/batches/:batchId", sameOriginOnly, adminOnly, async (req, res) => {
+  const batchId = String(req.params.batchId || "").trim();
+  if (!batchId || batchId.length > 100) {
+    return res.status(400).json({ success: false, message: "Mã nhóm không hợp lệ" });
+  }
+  try {
+    const result = await pool.query(
+      "DELETE FROM license_keys WHERE batch_id = $1 RETURNING id",
+      [batchId]
+    );
+    if (!result.rowCount) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy nhóm Key" });
+    }
+    return res.json({ success: true, deleted: result.rowCount, message: `Đã xóa ${result.rowCount} Key trong nhóm` });
+  } catch (error) {
+    console.error("Delete key batch error:", error);
+    return res.status(500).json({ success: false, message: "Không xóa được nhóm Key" });
+  }
+});
+
 app.delete("/api/admin/keys/:id", sameOriginOnly, adminOnly, async (req, res) => {
   try {
     const id = Number(req.params.id);
