@@ -259,6 +259,7 @@ function renderKeys() {
       <div class="batchHeader">
         <button type="button" class="batchToggle" data-action="toggle-batch" data-batch="${escapeHtml(batchId)}">${open?"▾":"▸"} ${isBatch?"NHÓM KEY":"KEY"} · ${list.length} KEY</button>
         <button type="button" class="secondary small" data-action="copy-batch" data-batch="${escapeHtml(batchId)}">▣ Sao chép nhóm</button>
+        ${isBatch ? `<button type="button" class="danger small" data-action="delete-batch" data-batch="${escapeHtml(batchId)}" data-count="${list.length}">✕ Xóa nhóm</button>` : ""}
       </div>
       <div class="batchBody ${open?"":"hidden"}">${list.map(renderKeyCard).join("")}</div>
     </section>`;
@@ -272,6 +273,19 @@ $("keyList").addEventListener("click", async e => {
     const batch = button.dataset.batch;
     if (expandedBatches.has(batch)) expandedBatches.delete(batch); else expandedBatches.add(batch);
     renderKeys(); return;
+  }
+  if (action === "delete-batch") {
+    const batch = button.dataset.batch;
+    const count = Number(button.dataset.count || 0);
+    if (!confirm(`Xóa toàn bộ ${count} Key trong nhóm này? Tất cả thiết bị đã kích hoạt thuộc các Key này cũng sẽ bị xóa. Thao tác không thể hoàn tác.`)) return;
+    button.disabled = true;
+    try {
+      await api("/api/admin/batches/" + encodeURIComponent(batch), {method:"DELETE"});
+      expandedBatches.delete(batch);
+      await loadKeys();
+      alert(`Đã xóa nhóm gồm ${count} Key.`);
+    } catch (err) { alert(err.message); button.disabled = false; }
+    return;
   }
   if (action === "copy-batch") {
     const batch = button.dataset.batch;
