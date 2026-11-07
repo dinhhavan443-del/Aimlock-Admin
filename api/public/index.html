@@ -5,1732 +5,349 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b0715">
   <title>AIMLOCK PEDINHIOS · Admin</title>
-
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
-    :root{
-      color-scheme:dark;
-      --bg:#0b0715;
-      --panel:#151020;
-      --panel2:#1d1530;
-      --line:#35264a;
-      --text:#f5efff;
-      --muted:#aa9abf;
-      --purple:#b879ff;
-      --green:#55e69a;
-      --red:#ff6b86;
-      --yellow:#ffc46b;
-    }
-
-    *{box-sizing:border-box}
-
-    body{
-      margin:0;
-      background:
-        radial-gradient(ellipse at 15% 0%,#291442 0,transparent 38%),
-        radial-gradient(ellipse at 100% 20%,#172044 0,transparent 35%),
-        var(--bg);
-      color:var(--text);
-      font-family:Inter,system-ui,sans-serif;
-      min-height:100vh;
-    }
-
-    .wrap{
-      width:min(1120px,100%);
-      margin:auto;
-      padding:22px 16px 50px;
-    }
-
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      margin-bottom:25px;
-    }
-
-    .logo{
-      width:46px;
-      height:46px;
-      border-radius:15px;
-      display:grid;
-      place-items:center;
-      background:linear-gradient(135deg,#6935a0,#1b9c78);
-      font-size:22px;
-      box-shadow:0 0 28px #9b54ff55;
-    }
-
-    .brand h1{
-      font-size:16px;
-      letter-spacing:.08em;
-      margin:0;
-    }
-
-    .brand p{
-      font-size:10px;
-      color:var(--muted);
-      letter-spacing:.16em;
-      margin:5px 0 0;
-    }
-
-    .spacer{flex:1}
-
-    .badge{
-      font-size:10px;
-      font-weight:800;
-      letter-spacing:.08em;
-      padding:7px 10px;
-      border-radius:999px;
-      background:#163c2c;
-      color:var(--green);
-      border:1px solid #2c7754;
-    }
-
-    .panel{
-      background:linear-gradient(145deg,#191327f2,#100c1aee);
-      border:1px solid var(--line);
-      border-radius:20px;
-      padding:20px;
-      box-shadow:0 18px 55px #0005;
-    }
-
-    .login{
-      max-width:430px;
-      margin:8vh auto;
-    }
-
-    .eyebrow{
-      color:var(--purple);
-      font-size:10px;
-      font-weight:800;
-      letter-spacing:.2em;
-    }
-
-    .title{
-      font-size:25px;
-      font-weight:900;
-      margin:8px 0;
-    }
-
-    .sub{
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.6;
-      margin:0 0 22px;
-    }
-
-    label{
-      display:block;
-      font-size:12px;
-      font-weight:700;
-      margin:15px 0 8px;
-      color:#d9cce8;
-    }
-
-    input,select,textarea{
-      width:100%;
-      background:#0e0a17;
-      border:1px solid #413052;
-      border-radius:12px;
-      color:#fff;
-      padding:14px;
-      font:inherit;
-      font-size:14px;
-      outline:none;
-    }
-
-    input:focus,select:focus,textarea:focus{
-      border-color:var(--purple);
-      box-shadow:0 0 0 3px #b879ff20;
-    }
-
-    input[readonly]{
-      color:#70edaa;
-      border-color:#286648;
-      background:#0d211a;
-      cursor:not-allowed;
-    }
-
-    button{
-      border:0;
-      border-radius:12px;
-      padding:12px 15px;
-      font:inherit;
-      font-weight:800;
-      font-size:12px;
-      cursor:pointer;
-      transition:.15s;
-    }
-
-    button:disabled{
-      opacity:.5;
-      cursor:not-allowed;
-    }
-
-    .primary{
-      width:100%;
-      margin-top:20px;
-      color:#10091b;
-      background:linear-gradient(100deg,#c38bff,#6ee9b0);
-      box-shadow:0 8px 25px #a66bff30;
-    }
-
-    .secondary{
-      background:#2b1b40;
-      color:#dec9f6;
-      border:1px solid #594070;
-    }
-
-    .danger{
-      background:#401a29;
-      color:#ff9bad;
-      border:1px solid #783247;
-    }
-
-    .success{
-      background:#163c2c;
-      color:#70edaa;
-      border:1px solid #2b7651;
-    }
-
-    .warning{
-      background:#3c2b17;
-      color:#ffd18a;
-      border:1px solid #77542b;
-    }
-
-    .small{
-      padding:9px 11px;
-      font-size:11px;
-    }
-
-    .hidden{display:none!important}
-
-    .error{
-      color:#ff91a4;
-      font-size:12px;
-      margin-top:12px;
-      min-height:18px;
-    }
-
-    .successText{
-      color:var(--green);
-      font-size:12px;
-      margin-top:12px;
-    }
-
-    .top{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-bottom:20px;
-    }
-
-    .top h2{
-      font-size:23px;
-      margin:0;
-    }
-
-    .stats{
-      display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:12px;
-      margin-bottom:18px;
-    }
-
-    .stat{
-      padding:16px;
-      border-radius:16px;
-      background:#171123;
-      border:1px solid var(--line);
-    }
-
-    .stat strong{
-      display:block;
-      font-size:27px;
-    }
-
-    .stat span{
-      color:var(--muted);
-      font-size:11px;
-    }
-
-    .green{color:var(--green)}
-    .purple{color:#d2a8ff}
-    .yellow{color:var(--yellow)}
-    .red{color:var(--red)}
-
-    .columns{
-      display:grid;
-      grid-template-columns:380px 1fr;
-      gap:16px;
-      align-items:start;
-    }
-
-    .sectionTitle{
-      font-size:14px;
-      margin:0 0 15px;
-    }
-
-    .hint{
-      font-size:11px;
-      color:var(--muted);
-      line-height:1.55;
-    }
-
-    .row{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-    }
-
-    .keyReveal{
-      background:#0d211a;
-      border:1px solid #286648;
-      padding:15px;
-      border-radius:14px;
-      margin-top:15px;
-    }
-
-    .keyReveal code{
-      display:block;
-      color:#70edaa;
-      font-size:16px;
-      font-weight:900;
-      word-break:break-all;
-      margin:10px 0;
-    }
-
-    .keyList{
-      display:grid;
-      gap:10px;
-    }
-
-    .keyCard{
-      background:#171123;
-      border:1px solid var(--line);
-      border-radius:15px;
-      padding:15px;
-    }
-
-    .keyHead{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-
-    .keyCode{
-      font-size:13px;
-      font-weight:900;
-      letter-spacing:.03em;
-      word-break:break-all;
-    }
-
-    .status{
-      font-size:10px;
-      font-weight:800;
-      padding:6px 9px;
-      border-radius:999px;
-      white-space:nowrap;
-    }
-
-    .status.active{
-      background:#153c2b;
-      color:#65e9a2;
-    }
-
-    .status.locked,.status.revoked{
-      background:#431c2b;
-      color:#ff91a4;
-    }
-
-    .status.expired{
-      background:#3b2b17;
-      color:#ffd18a;
-    }
-
-    .meta{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-      color:var(--muted);
-      font-size:11px;
-      margin:11px 0;
-    }
-
-    .actions{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-
-    .toolbar{
-      display:flex;
-      gap:10px;
-      margin:0 0 13px;
-    }
-
-    .toolbar input{flex:1}
-
-    .empty{
-      padding:30px;
-      text-align:center;
-      color:var(--muted);
-      border:1px dashed #49365e;
-      border-radius:14px;
-      font-size:13px;
-    }
-
-    .notice{
-      font-size:11px;
-      color:var(--muted);
-      line-height:1.6;
-      margin-top:14px;
-    }
-
-    /* KHU VỰC HIỂN THỊ KEY HÀNG LOẠT */
-    .keyReveal textarea{
-      display:block;
-      width:100%;
-      min-height:190px;
-      max-height:420px;
-      resize:vertical;
-      margin:12px 0;
-      padding:13px;
-      background:#071710;
-      border:1px solid #286648;
-      border-radius:11px;
-      color:#70edaa;
-      font-family:monospace;
-      font-size:13px;
-      font-weight:700;
-      line-height:1.8;
-      white-space:pre;
-      overflow:auto;
-    }
-
-    .keyRevealActions{
-      display:flex;
-      gap:9px;
-      flex-wrap:wrap;
-    }
-
-    .keyRevealActions button{
-      flex:1;
-      min-width:130px;
-    }
-
-    .batchCount{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:7px 10px;
-      border:1px solid #286648;
-      background:#153c2b;
-      color:#70edaa;
-      border-radius:999px;
-      font-size:11px;
-      font-weight:900;
-      margin-top:8px;
-    }
-
-    /* DEVICE CARD */
-    .deviceBox{
-      margin:16px 0;
-      padding:14px;
-      background:#100c1a;
-      border:1px solid #49345f;
-      border-radius:16px;
-      display:grid;
-      gap:12px;
-      min-width:0;
-    }
-
-    .deviceTitle{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding-bottom:12px;
-      border-bottom:1px solid var(--line);
-      color:#d9b8ff;
-      font-size:12px;
-      font-weight:900;
-      letter-spacing:.04em;
-    }
-
-    .deviceTitle span:last-child{
-      padding:6px 11px;
-      border-radius:999px;
-      background:#2b1b40;
-      color:#d8b4ff;
-      border:1px solid #67468a;
-      white-space:nowrap;
-    }
-
-    .deviceItem{
-      min-width:0;
-      padding:14px;
-      border:1px solid #443052;
-      border-radius:13px;
-      background:linear-gradient(145deg,#211630,#151020);
-      display:grid;
-      gap:12px;
-    }
-
-    .deviceHead{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      flex-wrap:wrap;
-      gap:9px;
-    }
-
-    .deviceName{
-      color:#f3e8ff;
-      font-size:13px;
-      font-weight:900;
-      overflow-wrap:anywhere;
-    }
-
-    .deviceActive{
-      background:#153c2b;
-      color:#65e9a2;
-    }
-
-    .deviceBlocked{
-      background:#431c2b;
-      color:#ff91a4;
-    }
-
-    .deviceInfo{
-      display:grid;
-      gap:9px;
-      padding:12px;
-      border-radius:10px;
-      background:#100b19;
-      border:1px solid #332440;
-    }
-
-    .deviceInfo span{
-      display:block;
-      color:#bbaacb;
-      font-size:11px;
-      line-height:1.6;
-      overflow-wrap:anywhere;
-    }
-
-    .deviceActions{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-    }
-
-    .deviceEmpty{
-      padding:14px;
-      color:var(--muted);
-      font-size:12px;
-      text-align:center;
-      border:1px dashed #49365e;
-      border-radius:11px;
-    }
-
-    /* NHÓM KEY THEO LÔ */
-    .batchGroup{
-      border:1px solid #49345f;
-      border-radius:16px;
-      overflow:hidden;
-      background:linear-gradient(145deg,#191327,#100c1a);
-    }
-
-    .batchHeader{
-      width:100%;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding:16px;
-      text-align:left;
-      color:var(--text);
-      background:linear-gradient(110deg,#211431,#171123);
-      border:0;
-      border-radius:0;
-    }
-
-    .batchHeader:active{
-      background:#2a1b3d;
-    }
-
-    .batchHeaderLeft{
-      display:grid;
-      gap:7px;
-      min-width:0;
-    }
-
-    .batchTitle{
-      font-size:13px;
-      font-weight:900;
-      letter-spacing:.04em;
-    }
-
-    .batchSub{
-      color:var(--muted);
-      font-size:10px;
-      font-weight:500;
-      line-height:1.5;
-      overflow-wrap:anywhere;
-    }
-
-    .batchHeaderRight{
-      display:flex;
-      align-items:center;
-      gap:9px;
-      flex-shrink:0;
-    }
-
-    .batchPill{
-      padding:7px 10px;
-      border-radius:999px;
-      background:#153c2b;
-      border:1px solid #286648;
-      color:#70edaa;
-      font-size:10px;
-      font-weight:900;
-      white-space:nowrap;
-    }
-
-    .batchArrow{
-      color:#d2a8ff;
-      font-size:17px;
-      transition:transform .2s;
-    }
-
-    .batchGroup.expanded .batchArrow{
-      transform:rotate(180deg);
-    }
-
-    .batchBody{
-      display:none;
-      padding:10px;
-      border-top:1px solid #49345f;
-      gap:10px;
-    }
-
-    .batchGroup.expanded .batchBody{
-      display:grid;
-    }
-
-    .batchBody .keyCard{
-      background:#171123;
-    }
-
-    .batchEmpty{
-      padding:16px;
-      text-align:center;
-      color:var(--muted);
-      font-size:12px;
-    }
-
-    @media(max-width:850px){
-      .columns{grid-template-columns:1fr}
-      .stats{grid-template-columns:repeat(2,1fr)}
-    }
-
-    @media(max-width:420px){
-      .wrap{padding:16px 12px 35px}
-      .panel{padding:16px}
-      .row{grid-template-columns:1fr}
-      .keyHead{
-        align-items:flex-start;
-        flex-direction:column;
-      }
-      .stats{gap:8px}
-      .stat{padding:13px}
-      .stat strong{font-size:23px}
-      .deviceItem{padding:12px}
-      .deviceHead{align-items:flex-start}
-      .deviceActions button{flex:1}
-      .batchHeader{padding:13px}
-      .batchBody{padding:8px}
-      .batchPill{font-size:9px;padding:6px 8px}
-    }
+    :root{color-scheme:dark;--bg:#0b0715;--panel:#151020;--panel2:#1d1530;--line:#35264a;--text:#f5efff;--muted:#aa9abf;--purple:#b879ff;--green:#55e69a;--red:#ff6b86;--yellow:#ffc46b}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% 0%,#291442 0,transparent 38%),radial-gradient(ellipse at 100% 20%,#172044 0,transparent 35%),var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;min-height:100vh}
+    .wrap{width:min(1120px,100%);margin:auto;padding:22px 16px 50px}.brand{display:flex;align-items:center;gap:12px;margin-bottom:25px}.logo{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(135deg,#6935a0,#1b9c78);font-size:22px;box-shadow:0 0 28px #9b54ff55}.brand h1{font-size:16px;letter-spacing:.08em;margin:0}.brand p{font-size:10px;color:var(--muted);letter-spacing:.16em;margin:5px 0 0}.spacer{flex:1}
+    .badge{font-size:10px;font-weight:800;letter-spacing:.08em;padding:7px 10px;border-radius:999px;background:#163c2c;color:var(--green);border:1px solid #2c7754}
+    .panel{background:linear-gradient(145deg,#191327f2,#100c1aee);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 18px 55px #0005}.login{max-width:430px;margin:8vh auto}.eyebrow{color:var(--purple);font-size:10px;font-weight:800;letter-spacing:.2em}.title{font-size:25px;font-weight:900;margin:8px 0}.sub{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 22px}
+    label{display:block;font-size:12px;font-weight:700;margin:15px 0 8px;color:#d9cce8}input,select,textarea{width:100%;background:#0e0a17;border:1px solid #413052;border-radius:12px;color:#fff;padding:14px;font:inherit;font-size:14px;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--purple);box-shadow:0 0 0 3px #b879ff20}button{border:0;border-radius:12px;padding:12px 15px;font:inherit;font-weight:800;font-size:12px;cursor:pointer;transition:.15s}button:disabled{opacity:.5;cursor:not-allowed}.primary{width:100%;margin-top:20px;color:#10091b;background:linear-gradient(100deg,#c38bff,#6ee9b0);box-shadow:0 8px 25px #a66bff30}.secondary{background:#2b1b40;color:#dec9f6;border:1px solid #594070}.danger{background:#401a29;color:#ff9bad;border:1px solid #783247}.success{background:#163c2c;color:#70edaa;border:1px solid #2b7651}.warning{background:#3c2b17;color:#ffd18a;border:1px solid #77542b}.small{padding:9px 11px;font-size:11px}.hidden{display:none!important}.error{color:#ff91a4;font-size:12px;margin-top:12px;min-height:18px}.successText{color:var(--green);font-size:12px;margin-top:12px}
+    .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}.top h2{font-size:23px;margin:0}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.stat{padding:16px;border-radius:16px;background:#171123;border:1px solid var(--line)}.stat strong{display:block;font-size:27px}.stat span{color:var(--muted);font-size:11px}.green{color:var(--green)}.purple{color:#d2a8ff}.yellow{color:var(--yellow)}.red{color:var(--red)}
+    .columns{display:grid;grid-template-columns:380px 1fr;gap:16px;align-items:start}.sectionTitle{font-size:14px;margin:0 0 15px}.hint{font-size:11px;color:var(--muted);line-height:1.55}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.keyReveal{background:#0d211a;border:1px solid #286648;padding:15px;border-radius:14px;margin-top:15px}.keyReveal code{display:block;color:#70edaa;font-size:16px;font-weight:900;word-break:break-all;margin:10px 0}.keyList{display:grid;gap:10px}.batchGroup{border:1px solid var(--line);border-radius:16px;background:#120d1d;overflow:hidden}.batchHeader{display:flex;align-items:center;gap:8px;padding:12px;background:#211632}.batchToggle{flex:1;text-align:left;background:transparent;color:#f5efff;padding:8px}.batchBody{display:grid;gap:10px;padding:10px}.batchBody.hidden{display:none!important}.keyCard{background:#171123;border:1px solid var(--line);border-radius:15px;padding:15px}.keyHead{display:flex;align-items:center;justify-content:space-between;gap:10px}.keyCode{font-size:13px;font-weight:900;letter-spacing:.03em;word-break:break-all}.status{font-size:10px;font-weight:800;padding:6px 9px;border-radius:999px;white-space:nowrap}.status.active{background:#153c2b;color:#65e9a2}.status.locked,.status.revoked{background:#431c2b;color:#ff91a4}.status.expired{background:#3b2b17;color:#ffd18a}.meta{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin:11px 0}.actions{display:flex;gap:8px;flex-wrap:wrap}.toolbar{display:flex;gap:10px;margin:0 0 13px}.toolbar input{flex:1}.empty{padding:30px;text-align:center;color:var(--muted);border:1px dashed #49365e;border-radius:14px;font-size:13px}.notice{font-size:11px;color:var(--muted);line-height:1.6;margin-top:14px}
+    @media(max-width:850px){.columns{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:420px){.wrap{padding:16px 12px 35px}.panel{padding:16px}.row{grid-template-columns:1fr}.keyHead{align-items:flex-start;flex-direction:column}.stats{gap:8px}.stat{padding:13px}.stat strong{font-size:23px}}
   </style>
 </head>
-
 <body>
-<main class="wrap">
+  <main class="wrap">
+    <header class="brand">
+      <div class="logo">⚡</div>
+      <div><h1>AIMLOCK PEDINHIOS</h1><p>PREMIUM KEY MANAGEMENT</p></div>
+      <div class="spacer"></div><span class="badge">ADMIN SYSTEM</span>
+    </header>
 
-  <header class="brand">
-    <div class="logo">⚡</div>
-    <div>
-      <h1>AIMLOCK PEDINHIOS</h1>
-      <p>PREMIUM KEY MANAGEMENT</p>
-    </div>
-    <div class="spacer"></div>
-    <span class="badge">ADMIN SYSTEM</span>
-  </header>
+    <section id="loginView" class="panel login">
+      <div class="eyebrow">SECURE ACCESS</div>
+      <h2 class="title">ĐĂNG NHẬP ADMIN</h2>
+      <p class="sub">Chỉ quản trị viên có tài khoản và mật khẩu hợp lệ mới được truy cập hệ thống tạo Key.</p>
+      <form id="loginForm">
+        <label for="username">Tài khoản Admin</label>
+        <input id="username" autocomplete="username" required placeholder="Nhập tài khoản Admin">
+        <label for="password">Mật khẩu Admin</label>
+        <input id="password" type="password" autocomplete="current-password" required placeholder="Nhập mật khẩu Admin">
+        <button class="primary" id="loginButton">ĐĂNG NHẬP ADMIN</button>
+        <div id="loginMessage" class="error"></div>
+      </form>
+      <p class="notice">Phiên đăng nhập được bảo vệ bằng cookie HttpOnly và tự hết hạn sau 8 giờ.</p>
+    </section>
 
-  <section id="loginView" class="panel login">
-    <div class="eyebrow">SECURE ACCESS</div>
-    <h2 class="title">ĐĂNG NHẬP ADMIN</h2>
-    <p class="sub">
-      Chỉ quản trị viên có tài khoản và mật khẩu hợp lệ mới được truy cập hệ thống tạo Key.
-    </p>
-
-    <form id="loginForm">
-      <label for="username">Tài khoản Admin</label>
-      <input id="username" autocomplete="username" required placeholder="Nhập tài khoản Admin">
-
-      <label for="password">Mật khẩu Admin</label>
-      <input id="password" type="password" autocomplete="current-password" required placeholder="Nhập mật khẩu Admin">
-
-      <button class="primary" id="loginButton">ĐĂNG NHẬP ADMIN</button>
-      <div id="loginMessage" class="error"></div>
-    </form>
-
-    <p class="notice">
-      Phiên đăng nhập được bảo vệ bằng cookie HttpOnly và tự hết hạn sau 30 ngày.
-    </p>
-  </section>
-
-  <section id="adminView" class="hidden">
-
-    <div class="top">
-      <div>
-        <div class="eyebrow">CONTROL CENTER</div>
-        <h2>Quản lý Key</h2>
+    <section id="adminView" class="hidden">
+      <div class="top"><div><div class="eyebrow">CONTROL CENTER</div><h2>Quản lý Key</h2></div><div class="spacer"></div><button id="refreshButton" class="secondary">↻ Làm mới</button><button id="logoutButton" class="danger">Đăng xuất</button></div>
+      <div class="stats">
+        <div class="stat"><strong id="totalCount" class="purple">0</strong><span>Tổng số Key</span></div>
+        <div class="stat"><strong id="activeCount" class="green">0</strong><span>Đang hoạt động</span></div>
+        <div class="stat"><strong id="lockedCount" class="red">0</strong><span>Đã khóa</span></div>
+        <div class="stat"><strong id="expiredCount" class="yellow">0</strong><span>Đã hết hạn</span></div>
       </div>
-      <div class="spacer"></div>
-      <button id="refreshButton" class="secondary">↻ Làm mới</button>
-      <button id="logoutButton" class="danger">Đăng xuất</button>
-    </div>
+      <div class="columns">
+        <section class="panel">
+          <h3 class="sectionTitle">✦ TẠO KEY MỚI</h3>
+          <form id="createForm">
+            <label for="durationType">Loại Key</label>
+            <select id="durationType">
+              <option value="hours">Key giờ</option><option value="days" selected>Key ngày</option><option value="weeks">Key tuần</option><option value="months">Key tháng</option><option value="years">Key năm</option><option value="permanent">Key vĩnh viễn</option>
+            </select>
+            <div id="durationWrap"><label for="durationValue">Thời hạn</label><input id="durationValue" type="number" min="1" max="100000" value="7" required><p class="hint" id="durationHint">Nhập số ngày muốn sử dụng.</p></div>
+            <label for="maxDevices">Số lượng thiết bị</label>
+            <input id="maxDevices" type="number" min="1" max="10" value="1" required placeholder="Ví dụ: 2">
+            <p class="hint">Nhập số thiết bị được phép kích hoạt Key. Giới hạn được kiểm tra ở API khi ứng dụng gửi mã thiết bị.</p>
+            <label for="quantity">Số lượng Key muốn tạo</label>
+            <input id="quantity" type="number" min="1" max="500" value="1" required>
+            <p class="hint">Tạo tối đa 500 Key trong một lần. Các Key sẽ được gom chung thành một nhóm.</p>
+            <label for="note">Ghi chú (không bắt buộc)</label>
+            <input id="note" maxlength="200" placeholder="Ví dụ: Khách hàng / đơn hàng">
+            <button class="primary" id="createButton">＋ TẠO KEY</button>
+          </form>
+          <div id="createMessage" class="error"></div>
+          <div id="createSuccess" class="successText" aria-live="polite"></div>
+          <p class="notice">Key được lưu dưới dạng mã băm ở cơ sở dữ liệu. Hãy sao chép và gửi Key cho người dùng ngay sau khi tạo.</p>
+        </section>
 
-    <div class="stats">
-      <div class="stat">
-        <strong id="totalCount" class="purple">0</strong>
-        <span>Tổng số Key</span>
+        <section class="panel">
+          <div class="top"><h3 class="sectionTitle" style="margin:0">DANH SÁCH KEY</h3><div class="spacer"></div></div>
+          <div class="toolbar"><input id="searchInput" placeholder="Tìm theo mã gợi nhớ hoặc ghi chú..."></div>
+          <div id="keyList" class="keyList"><div class="empty">Đang tải danh sách Key...</div></div>
+        </section>
       </div>
-      <div class="stat">
-        <strong id="activeCount" class="green">0</strong>
-        <span>Đang hoạt động</span>
-      </div>
-      <div class="stat">
-        <strong id="lockedCount" class="red">0</strong>
-        <span>Đã khóa</span>
-      </div>
-      <div class="stat">
-        <strong id="expiredCount" class="yellow">0</strong>
-        <span>Đã hết hạn</span>
-      </div>
-    </div>
-
-    <div class="columns">
-
-      <section class="panel">
-        <h3 class="sectionTitle">✦ TẠO KEY MỚI</h3>
-
-        <form id="createForm">
-
-          <label for="durationType">Loại Key</label>
-          <select id="durationType">
-            <option value="hours">Key giờ</option>
-            <option value="days" selected>Key ngày</option>
-            <option value="weeks">Key tuần</option>
-            <option value="months">Key tháng</option>
-            <option value="years">Key năm</option>
-            <option value="permanent">Key vĩnh viễn</option>
-          </select>
-
-          <div id="durationWrap">
-            <label for="durationValue">Thời hạn</label>
-            <input id="durationValue" type="number" min="1" max="100000" value="7" required>
-            <p class="hint" id="durationHint">Nhập số ngày muốn sử dụng.</p>
-          </div>
-
-          <label for="quantity">Số lượng Key muốn tạo</label>
-          <input
-            id="quantity"
-            type="number"
-            min="1"
-            max="500"
-            value="1"
-            required
-            inputmode="numeric"
-            placeholder="Ví dụ: 100">
-
-          <p class="hint">
-            Nhập số lượng Key cần tạo trong một lần. Có thể tạo tối đa 500 Key mỗi lần.
-          </p>
-
-          <label for="maxDevices">Số lượng thiết bị</label>
-          <input
-            id="maxDevices"
-            type="number"
-            min="1"
-            max="1"
-            value="1"
-            readonly
-            aria-readonly="true">
-
-          <p class="hint">
-            Mỗi Key chỉ dùng được trên 1 thiết bị. Giới hạn được kiểm tra trực tiếp ở máy chủ.
-          </p>
-
-          <label for="note">Ghi chú (không bắt buộc)</label>
-          <input id="note" maxlength="200" placeholder="Ví dụ: Khách hàng / đơn hàng">
-
-          <button class="primary" id="createButton">＋ TẠO KEY</button>
-        </form>
-
-        <div id="createMessage" class="error"></div>
-
-        <div id="keyReveal" class="keyReveal hidden">
-          <div class="eyebrow">DANH SÁCH KEY VỪA TẠO</div>
-          <div id="createdCount" class="batchCount">0 KEY ĐÃ TẠO</div>
-
-          <textarea
-            id="newKeys"
-            readonly
-            spellcheck="false"
-            placeholder="Các Key được tạo sẽ hiển thị ở đây, mỗi Key một dòng..."></textarea>
-
-          <div class="keyRevealActions">
-            <button id="copyAllKeysButton" type="button" class="success">
-              ▣ SAO CHÉP TẤT CẢ
-            </button>
-            <button id="selectAllKeysButton" type="button" class="secondary">
-              CHỌN TẤT CẢ KEY
-            </button>
-          </div>
-
-          <p id="newKeyInfo" class="hint"></p>
-          <div id="copyAllMessage" class="successText"></div>
-        </div>
-
-        <p class="notice">
-          Key được lưu ở dạng mã băm và bản mã hóa trong cơ sở dữ liệu. Hãy sao chép danh sách Key sau khi tạo để gửi cho người dùng.
-        </p>
-      </section>
-
-      <section class="panel">
-
-        <div class="top">
-          <h3 class="sectionTitle" style="margin:0">DANH SÁCH KEY</h3>
-          <div class="spacer"></div>
-        </div>
-
-        <div class="toolbar">
-          <input id="searchInput" placeholder="Tìm theo mã gợi nhớ hoặc ghi chú...">
-        </div>
-
-        <div id="keyList" class="keyList">
-          <div class="empty">Đang tải danh sách Key...</div>
-        </div>
-
-      </section>
-    </div>
-  </section>
-</main>
-
+    </section>
+  </main>
 <script>
 const $ = id => document.getElementById(id);
-
 let keys = [];
-let lastCreatedKeys = [];
-
-// Lưu trạng thái nhóm đang mở khi danh sách tự làm mới.
-const expandedBatches = new Set();
-
-const typeNames = {
-  hours:"giờ",
-  days:"ngày",
-  weeks:"tuần",
-  months:"tháng",
-  years:"năm",
-  permanent:"vĩnh viễn"
-};
-
-const fmt = value =>
-  value ? new Date(value).toLocaleString("vi-VN") : "Không hết hạn";
-
-const escapeHtml = value =>
-  String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;",
-    "<":"&lt;",
-    ">":"&gt;",
-    '"':"&quot;",
-    "'":"&#39;"
-  }[c]));
-
+let expandedBatches = new Set();
+const typeNames = {hours:"giờ",days:"ngày",weeks:"tuần",months:"tháng",years:"năm",permanent:"vĩnh viễn"};
+const fmt = value => value ? new Date(value).toLocaleString("vi-VN") : "Không hết hạn";
+const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 async function copyText(value) {
-  try {
-    await navigator.clipboard.writeText(value);
-  } catch {
+  try { await navigator.clipboard.writeText(value); }
+  catch {
     const area = document.createElement("textarea");
-    area.value = value;
-    area.style.position = "fixed";
-    area.style.opacity = "0";
-    document.body.appendChild(area);
-    area.select();
-
-    const ok = document.execCommand("copy");
-    area.remove();
-
-    if (!ok) {
-      throw new Error("Trình duyệt không cho phép sao chép. Hãy chọn và sao chép thủ công.");
-    }
+    area.value = value; area.style.position = "fixed"; area.style.opacity = "0";
+    document.body.appendChild(area); area.select();
+    const ok = document.execCommand("copy"); area.remove();
+    if (!ok) throw new Error("Trình duyệt không cho phép sao chép. Hãy chọn và sao chép thủ công.");
   }
 }
-
 async function api(url, options={}) {
-  const response = await fetch(url, {
-    credentials:"same-origin",
-    ...options,
-    headers:{
-      "Content-Type":"application/json",
-      ...(options.headers||{})
-    }
-  });
-
+  const response = await fetch(url, {credentials:"same-origin", ...options, headers:{"Content-Type":"application/json", ...(options.headers||{})}});
   let data = {};
-
-  try {
-    data = await response.json();
-  } catch {}
-
+  try { data = await response.json(); } catch {}
   if (!response.ok) {
     if (response.status === 401) showLogin();
     throw new Error(data.message || "Có lỗi xảy ra. Vui lòng thử lại.");
   }
-
   return data;
 }
-
 function showLogin() {
   $("adminView").classList.add("hidden");
   $("loginView").classList.remove("hidden");
 }
-
 function showAdmin() {
   $("loginView").classList.add("hidden");
   $("adminView").classList.remove("hidden");
   loadKeys();
 }
-
-// LOGIN
 $("loginForm").addEventListener("submit", async e => {
   e.preventDefault();
-
   $("loginMessage").textContent = "";
   $("loginButton").disabled = true;
-
   try {
-    await api("/api/admin/login", {
-      method:"POST",
-      body:JSON.stringify({
-        username:$("username").value,
-        password:$("password").value
-      })
-    });
-
+    await api("/api/admin/login", {method:"POST", body:JSON.stringify({username:$("username").value,password:$("password").value})});
     $("password").value = "";
     showAdmin();
-  } catch (err) {
-    $("loginMessage").textContent = err.message;
-  } finally {
-    $("loginButton").disabled = false;
-  }
+  } catch (err) { $("loginMessage").textContent = err.message; }
+  finally { $("loginButton").disabled = false; }
 });
-
-// LOGOUT
 $("logoutButton").addEventListener("click", async () => {
-  try {
-    await api("/api/admin/logout", {
-      method:"POST",
-      body:"{}"
-    });
-  } catch {}
-
+  try { await api("/api/admin/logout", {method:"POST",body:"{}"}); } catch {}
   showLogin();
 });
-
 $("refreshButton").addEventListener("click", loadKeys);
-
-// DURATION
 $("durationType").addEventListener("change", () => {
   const permanent = $("durationType").value === "permanent";
-
   $("durationWrap").classList.toggle("hidden", permanent);
   $("durationValue").required = !permanent;
-
-  $("durationHint").textContent =
-    "Nhập số " +
-    (typeNames[$("durationType").value] || "") +
-    " muốn sử dụng.";
+  $("durationHint").textContent = "Nhập số " + (typeNames[$("durationType").value] || "") + " muốn sử dụng.";
 });
-
-// CREATE MULTIPLE KEYS
 $("createForm").addEventListener("submit", async e => {
   e.preventDefault();
-
   $("createMessage").textContent = "";
-  $("copyAllMessage").textContent = "";
+  $("createSuccess").textContent = "";
   $("createButton").disabled = true;
-
-  $("keyReveal").classList.add("hidden");
-  lastCreatedKeys = [];
-
   const durationType = $("durationType").value;
-  const quantity = Number($("quantity").value);
-
-  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 500) {
-    $("createMessage").textContent =
-      "Số lượng Key phải từ 1 đến 500.";
-
-    $("createButton").disabled = false;
-    return;
-  }
-
-  const durationValue = Number($("durationValue").value);
-
-  if (
-    durationType !== "permanent" &&
-    (!Number.isInteger(durationValue) ||
-     durationValue < 1 ||
-     durationValue > 100000)
-  ) {
-    $("createMessage").textContent =
-      "Thời hạn phải là số nguyên dương hợp lệ.";
-
-    $("createButton").disabled = false;
-    return;
-  }
-
   const payload = {
     durationType,
-    durationValue:
-      durationType === "permanent"
-        ? null
-        : durationValue,
-    maxDevices:1,
-    note:$("note").value,
-    quantity
+    durationValue: durationType === "permanent" ? null : Number($("durationValue").value),
+    maxDevices: Number($("maxDevices").value),
+    quantity: Number($("quantity").value),
+    note: $("note").value
   };
-
+  if (!Number.isInteger(payload.maxDevices) || payload.maxDevices < 1 || payload.maxDevices > 10) {
+    $("createMessage").textContent = "Số thiết bị phải từ 1 đến 10.";
+    $("createButton").disabled = false; return;
+  }
+  if (!Number.isInteger(payload.quantity) || payload.quantity < 1 || payload.quantity > 500) {
+    $("createMessage").textContent = "Số lượng Key phải từ 1 đến 500.";
+    $("createButton").disabled = false; return;
+  }
   try {
-    const data = await api("/api/admin/keys", {
-      method:"POST",
-      body:JSON.stringify(payload)
-    });
-
-    const created = Array.isArray(data.keys)
-      ? data.keys
-      : (data.key ? [{ key:data.key }] : []);
-
-    if (created.length !== quantity) {
-      throw new Error("Số lượng Key máy chủ trả về không khớp. Hãy tải lại danh sách trước khi tạo tiếp.");
-    }
-
-    lastCreatedKeys = created
-      .map(item => item.key)
-      .filter(Boolean);
-
-    if (lastCreatedKeys.length !== quantity) {
-      throw new Error("Danh sách Key trả về không đầy đủ.");
-    }
-
-    $("newKeys").value = lastCreatedKeys.join("\n");
-
-    $("createdCount").textContent =
-      lastCreatedKeys.length + " KEY ĐÃ TẠO";
-
-    $("newKeyInfo").textContent =
-      "Mã lô: " + (data.batchId || created[0]?.batchId || "—") +
-      " · Tạo lúc: " + fmt(created[0]?.createdAt) +
-      " · Hết hạn: " + fmt(created[0]?.expiresAt) +
-      " · Thiết bị tối đa mỗi Key: 1";
-
-    $("keyReveal").classList.remove("hidden");
+    const data = await api("/api/admin/keys", {method:"POST",body:JSON.stringify(payload)});
+    if (data.batchId) expandedBatches.add(String(data.batchId));
+    $("createSuccess").textContent = `✓ Đã tạo thành công ${data.batchSize || data.createdKeys?.length || 1} Key. Nhóm mới đã được mở trong Danh sách Key.`;
     $("note").value = "";
-
-    $("createMessage").textContent =
-      "✓ " + data.message;
-
     await loadKeys();
-
-  } catch (err) {
-    $("createMessage").textContent = err.message;
-  } finally {
-    $("createButton").disabled = false;
-  }
+  } catch (err) { $("createMessage").textContent = err.message; }
+  finally { $("createButton").disabled = false; }
 });
-
-// COPY ALL CREATED KEYS
-$("copyAllKeysButton").addEventListener("click", async () => {
-  if (!lastCreatedKeys.length) {
-    alert("Chưa có danh sách Key để sao chép.");
-    return;
-  }
-
-  try {
-    await copyText(lastCreatedKeys.join("\n"));
-
-    $("copyAllKeysButton").textContent =
-      "ĐÃ SAO CHÉP TẤT CẢ ✓";
-
-    $("copyAllMessage").textContent =
-      "Đã sao chép " + lastCreatedKeys.length + " Key.";
-
-    setTimeout(() => {
-      $("copyAllKeysButton").textContent =
-        "▣ SAO CHÉP TẤT CẢ";
-    }, 2000);
-
-  } catch (err) {
-    alert(err.message);
-  }
-});
-
-// SELECT ALL TEXT
-$("selectAllKeysButton").addEventListener("click", () => {
-  $("newKeys").focus();
-  $("newKeys").select();
-});
-
-// SEARCH
 $("searchInput").addEventListener("input", renderKeys);
-
 function effectiveStatus(k) {
   if (k.status !== "active") return k.status;
-
-  if (
-    k.expires_at &&
-    new Date(k.expires_at).getTime() <= Date.now()
-  ) {
-    return "expired";
-  }
-
+  if (k.expires_at && new Date(k.expires_at).getTime() <= Date.now()) return "expired";
   return "active";
 }
-
 function countdown(k) {
   if (!k.expires_at) return "Vĩnh viễn";
-
   const diff = new Date(k.expires_at).getTime() - Date.now();
-
   if (diff <= 0) return "Đã hết hạn";
-
-  const sec = Math.floor(diff/1000);
-  const days = Math.floor(sec/86400);
-  const hours = Math.floor(sec%86400/3600);
-  const mins = Math.floor(sec%3600/60);
-  const seconds = sec%60;
-
+  const sec = Math.floor(diff/1000), days = Math.floor(sec/86400), hours = Math.floor(sec%86400/3600), mins = Math.floor(sec%3600/60), seconds = sec%60;
   return `${days} ngày ${hours} giờ ${mins} phút ${seconds} giây`;
 }
-
 let loadingKeys = false;
-
 async function loadKeys() {
-  if (
-    loadingKeys ||
-    $("adminView").classList.contains("hidden")
-  ) return;
-
+  if (loadingKeys || $("adminView").classList.contains("hidden")) return;
   loadingKeys = true;
-
   try {
     const data = await api("/api/admin/keys");
-
     keys = data.keys || [];
     renderKeys();
-
-  } catch (err) {
-    $("keyList").innerHTML =
-      '<div class="empty">' +
-      escapeHtml(err.message) +
-      '</div>';
-  } finally {
-    loadingKeys = false;
-  }
+  } catch (err) { $("keyList").innerHTML = '<div class="empty">'+escapeHtml(err.message)+'</div>'; }
+  finally { loadingKeys = false; }
 }
-
-// RENDER DEVICES
 function renderDevices(k) {
-  const devices = Array.isArray(k.devices)
-    ? k.devices
-    : [];
-
-  const used = Number.isFinite(Number(k.devices_used))
-    ? Number(k.devices_used)
-    : devices.length;
-
-  const max = 1;
-
-  const header = `
-    <div class="deviceTitle">
-      <span>📱 THIẾT BỊ ĐÃ KÍCH HOẠT</span>
-      <span>${used}/${max}</span>
-    </div>
-  `;
-
-  if (!devices.length) {
-    return `
-      <div class="deviceBox">
-        ${header}
-        <div class="deviceEmpty">
-          Key này chưa có thiết bị kích hoạt.
-        </div>
+  const devices = Array.isArray(k.devices) ? k.devices : [];
+  const used = Number.isFinite(Number(k.devices_used)) ? Number(k.devices_used) : devices.length;
+  const max = Number(k.max_devices || 1);
+  const header = `<div class="deviceTitle"><span>📱 THIẾT BỊ ĐÃ KÍCH HOẠT</span><span>${used}/${max}</span></div>`;
+  if (!devices.length) return `<div class="deviceBox">${header}<div class="deviceEmpty">Key này chưa có thiết bị kích hoạt.</div></div>`;
+  return `<div class="deviceBox">${header}${devices.map((d, index) => {
+    const blocked = d.status === "blocked";
+    const deviceId = escapeHtml(d.id);
+    const keyId = escapeHtml(k.id);
+    const hint = escapeHtml(d.deviceHint || ("Thiết bị " + (index + 1)));
+    return `<div class="deviceItem">
+      <div class="deviceHead"><span class="deviceName">${hint}</span><span class="status ${blocked ? "deviceBlocked" : "deviceActive"}">${blocked ? "Đã khóa" : "Đang hoạt động"}</span></div>
+      <div class="deviceInfo"><span>Mã thiết bị: ${hint}</span><span>Kích hoạt lần đầu: ${escapeHtml(fmt(d.firstSeenAt))}</span><span>Hoạt động cuối: ${escapeHtml(fmt(d.lastSeenAt))}</span></div>
+      <div class="deviceActions">
+        ${blocked
+          ? `<button class="success small" data-action="device-unblock" data-id="${keyId}" data-device-id="${deviceId}">🔓 Mở thiết bị</button>`
+          : `<button class="warning small" data-action="device-block" data-id="${keyId}" data-device-id="${deviceId}">🔒 Khóa thiết bị</button>`}
+        <button class="danger small" data-action="device-delete" data-id="${keyId}" data-device-id="${deviceId}">✕ Xóa thiết bị</button>
       </div>
-    `;
-  }
-
-  return `
-    <div class="deviceBox">
-      ${header}
-
-      ${devices.map((d, index) => {
-        const blocked = d.status === "blocked";
-
-        const deviceId = escapeHtml(d.id);
-        const keyId = escapeHtml(k.id);
-
-        const hint = escapeHtml(
-          d.deviceHint || ("Thiết bị " + (index + 1))
-        );
-
-        return `
-          <div class="deviceItem">
-
-            <div class="deviceHead">
-              <span class="deviceName">📱 ${hint}</span>
-
-              <span class="status ${
-                blocked ? "deviceBlocked" : "deviceActive"
-              }">
-                ${blocked ? "Đã khóa" : "Đang hoạt động"}
-              </span>
-            </div>
-
-            <div class="deviceInfo">
-              <span>🔑 Mã thiết bị: ${hint}</span>
-
-              <span>
-                🕒 Kích hoạt lần đầu:
-                ${escapeHtml(fmt(d.firstSeenAt))}
-              </span>
-
-              <span>
-                🟢 Hoạt động cuối:
-                ${escapeHtml(fmt(d.lastSeenAt))}
-              </span>
-            </div>
-
-            <div class="deviceActions">
-
-              ${
-                blocked
-                  ? `
-                    <button
-                      class="success small"
-                      data-action="device-unblock"
-                      data-id="${keyId}"
-                      data-device-id="${deviceId}">
-                      🔓 Mở thiết bị
-                    </button>
-                  `
-                  : `
-                    <button
-                      class="warning small"
-                      data-action="device-block"
-                      data-id="${keyId}"
-                      data-device-id="${deviceId}">
-                      🔒 Khóa thiết bị
-                    </button>
-                  `
-              }
-
-              <button
-                class="danger small"
-                data-action="device-delete"
-                data-id="${keyId}"
-                data-device-id="${deviceId}">
-                ✕ Xóa thiết bị
-              </button>
-
-            </div>
-          </div>
-        `;
-      }).join("")}
-
-    </div>
-  `;
+    </div>`;
+  }).join("")}</div>`;
 }
 
-// RENDER ONE KEY CARD
 function renderKeyCard(k) {
   const status = effectiveStatus(k);
-
-  const statusText =
-    status === "active" ? "Đang hoạt động" :
-    status === "expired" ? "Đã hết hạn" :
-    status === "revoked" ? "Đã thu hồi" :
-    "Đã khóa";
-
+  const statusText = status==="active"?"Đang hoạt động":status==="expired"?"Đã hết hạn":status==="revoked"?"Đã thu hồi":"Đã khóa";
   const type = typeNames[k.duration_type] || "Key";
-
-  const used = Number(k.devices_used || 0);
-
-  const buttons = status === "active"
-    ? `
-      <button
-        class="warning small"
-        data-action="lock"
-        data-id="${escapeHtml(k.id)}">
-        🔒 Khóa Key
-      </button>
-    `
-    : (
-      status === "locked" || status === "revoked"
-    )
-      ? `
-        <button
-          class="success small"
-          data-action="unlock"
-          data-id="${escapeHtml(k.id)}">
-          🔓 Mở khóa
-        </button>
-      `
-      : "";
-
-  return `
-    <article class="keyCard">
-
-      <div class="keyHead">
-        <div class="keyCode">
-          AIM-••••-••••-••••-${escapeHtml(
-            String(k.key_hint || "").slice(-4)
-          )}
-        </div>
-
-        <span class="status ${escapeHtml(status)}">
-          ${statusText}
-        </span>
-      </div>
-
-      <div class="meta">
-        <span>Loại: ${escapeHtml(type)}</span>
-        <span>Thiết bị: ${used}/1</span>
-      </div>
-
-      <div class="meta">
-        <span>Tạo: ${escapeHtml(fmt(k.created_at))}</span>
-      </div>
-
-      <div class="meta">
-        <span>Kích hoạt: ${escapeHtml(fmt(k.activated_at))}</span>
-      </div>
-
-      <div class="meta">
-        <span>Hết hạn: ${escapeHtml(fmt(k.expires_at))}</span>
-      </div>
-
-      ${renderDevices(k)}
-
-      <div class="meta">
-        <span
-          class="countdown"
-          data-expiry="${escapeHtml(k.expires_at || "")}">
-          ${escapeHtml(countdown(k))}
-        </span>
-      </div>
-
-      ${
-        k.note
-          ? `<div class="meta">Ghi chú: ${escapeHtml(k.note)}</div>`
-          : ""
-      }
-
-      <div class="actions">
-
-        <button
-          class="success small"
-          data-action="copy"
-          data-id="${escapeHtml(k.id)}"
-          ${
-            k.can_copy
-              ? ""
-              : 'disabled title="Key cũ không thể khôi phục từ mã băm"'
-          }>
-          ▣ Sao chép
-        </button>
-
-        ${buttons}
-
-        <button
-          class="danger small"
-          data-action="delete"
-          data-id="${escapeHtml(k.id)}">
-          ✕ Xóa Key
-        </button>
-
-      </div>
-    </article>
-  `;
+  const used = Number(k.devices_used || 0), max = Number(k.max_devices || 1);
+  const buttons = status==="active"
+    ? `<button class="warning small" data-action="lock" data-id="${k.id}">🔒 Khóa Key</button>`
+    : (status==="locked" || status==="revoked")
+      ? `<button class="success small" data-action="unlock" data-id="${k.id}">🔓 Mở khóa</button>` : "";
+  return `<article class="keyCard">
+    <div class="keyHead"><div class="keyCode">AIM-••••-••••-••••-${escapeHtml(String(k.key_hint||"").slice(-4))}</div><span class="status ${status}">${statusText}</span></div>
+    <div class="meta"><span>Loại: ${escapeHtml(type)}</span><span>Thiết bị: ${used}/${max}</span></div>
+    <div class="meta"><span>Tạo: ${escapeHtml(fmt(k.created_at))}</span><span>Kích hoạt: ${escapeHtml(fmt(k.activated_at))}</span></div>
+    <div class="meta"><span>Hết hạn: ${escapeHtml(fmt(k.expires_at))}</span></div>
+    ${renderDevices(k)}
+    <div class="meta"><span class="countdown" data-expiry="${k.expires_at||""}">${escapeHtml(countdown(k))}</span></div>
+    ${k.note?`<div class="meta">Ghi chú: ${escapeHtml(k.note)}</div>`:""}
+    <div class="actions"><button class="success small" data-action="copy" data-id="${k.id}" ${k.can_copy ? "" : "disabled title=\"Key cũ không thể khôi phục từ mã băm\""}>▣ Sao chép</button>${buttons}<button class="danger small" data-action="delete" data-id="${k.id}">✕ Xóa Key</button></div>
+  </article>`;
 }
-
-// TẠO NHÓM: KEY CÓ BATCH_ID CHUNG NẰM TRONG MỘT NHÓM.
-// KEY CŨ KHÔNG CÓ BATCH_ID SẼ HIỆN THÀNH NHÓM RIÊNG.
-function makeKeyGroups(list) {
-  const groups = new Map();
-
-  list.forEach(k => {
-    const batchId = k.batch_id
-      ? String(k.batch_id)
-      : "legacy-" + String(k.id);
-
-    if (!groups.has(batchId)) {
-      groups.set(batchId, {
-        id:batchId,
-        batchId:k.batch_id || null,
-        keys:[],
-        createdAt:k.created_at,
-        batchSize:Number(k.batch_size || 1),
-        legacy:!k.batch_id
-      });
-    }
-
-    groups.get(batchId).keys.push(k);
-  });
-
-  return Array.from(groups.values()).sort((a, b) => {
-    return new Date(b.createdAt || 0) -
-      new Date(a.createdAt || 0);
-  });
-}
-
-// RENDER KEY LIST
 function renderKeys() {
-  // THỐNG KÊ THEO TỪNG KEY, KHÔNG PHẢI SỐ NHÓM
-  const active = keys.filter(
-    k => effectiveStatus(k) === "active"
-  ).length;
-
-  const locked = keys.filter(
-    k => ["locked","revoked"].includes(effectiveStatus(k))
-  ).length;
-
-  const expired = keys.filter(
-    k => effectiveStatus(k) === "expired"
-  ).length;
-
-  $("totalCount").textContent = keys.length;
-  $("activeCount").textContent = active;
-  $("lockedCount").textContent = locked;
-  $("expiredCount").textContent = expired;
-
+  const active = keys.filter(k => effectiveStatus(k)==="active").length;
+  const locked = keys.filter(k => ["locked","revoked"].includes(effectiveStatus(k))).length;
+  const expired = keys.filter(k => effectiveStatus(k)==="expired").length;
+  $("totalCount").textContent = keys.length; $("activeCount").textContent = active;
+  $("lockedCount").textContent = locked; $("expiredCount").textContent = expired;
   const q = $("searchInput").value.trim().toLowerCase();
-
-  const filtered = keys.filter(k =>
-    (`${k.key_hint} ${k.note||""}`).toLowerCase().includes(q)
-  );
-
-  if (!filtered.length) {
-    $("keyList").innerHTML =
-      '<div class="empty">Chưa có Key phù hợp.</div>';
-    return;
-  }
-
-  const groups = makeKeyGroups(filtered);
-
-  $("keyList").innerHTML = groups.map(group => {
-    const groupKeys = group.keys;
-    const expanded = expandedBatches.has(group.id);
-
-    const totalInBatch = group.legacy
-      ? groupKeys.length
-      : group.batchSize;
-
-    const activeInBatch = groupKeys.filter(
-      k => effectiveStatus(k) === "active"
-    ).length;
-
-    const lockedInBatch = groupKeys.filter(
-      k => ["locked","revoked"].includes(effectiveStatus(k))
-    ).length;
-
-    const expiredInBatch = groupKeys.filter(
-      k => effectiveStatus(k) === "expired"
-    ).length;
-
-    const groupTitle = group.legacy
-      ? "KEY CŨ"
-      : "LÔ KEY";
-
-    const groupDescription = group.legacy
-      ? "Key chưa được phân nhóm từ phiên bản trước"
-      : "Mã lô: " + group.batchId;
-
-    const visibleCount = groupKeys.length;
-
-    return `
-      <section class="batchGroup ${expanded ? "expanded" : ""}">
-
-        <button
-          type="button"
-          class="batchHeader"
-          data-action="toggle-batch"
-          data-batch-id="${escapeHtml(group.id)}">
-
-          <span class="batchHeaderLeft">
-            <span class="batchTitle">
-              📦 ${groupTitle} · ${totalInBatch} KEY
-            </span>
-
-            <span class="batchSub">
-              ${escapeHtml(groupDescription)}
-            </span>
-
-            <span class="batchSub">
-              🟢 ${activeInBatch} hoạt động
-              · 🔴 ${lockedInBatch} khóa
-              · 🟡 ${expiredInBatch} hết hạn
-            </span>
-
-            ${
-              q
-                ? `<span class="batchSub">Đang hiển thị ${visibleCount}/${totalInBatch} Key phù hợp tìm kiếm</span>`
-                : ""
-            }
-          </span>
-
-          <span class="batchHeaderRight">
-            <span class="batchPill">${visibleCount} KEY</span>
-            <span class="batchArrow">⌄</span>
-          </span>
-
-        </button>
-
-        <div class="batchBody">
-          ${groupKeys.map(renderKeyCard).join("")}
-        </div>
-
-      </section>
-    `;
+  const filtered = keys.filter(k => (`${k.key_hint} ${k.note||""}`).toLowerCase().includes(q));
+  if (!filtered.length) { $("keyList").innerHTML = '<div class="empty">Chưa có Key phù hợp.</div>'; return; }
+  const groups = new Map();
+  filtered.forEach(k => {
+    const id = k.batch_id ? String(k.batch_id) : `single-${k.id}`;
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(k);
+  });
+  $("keyList").innerHTML = [...groups.entries()].map(([batchId, list]) => {
+    const open = expandedBatches.has(batchId);
+    const isBatch = !!list[0].batch_id;
+    return `<section class="batchGroup" data-batch="${escapeHtml(batchId)}">
+      <div class="batchHeader">
+        <button type="button" class="batchToggle" data-action="toggle-batch" data-batch="${escapeHtml(batchId)}">${open?"▾":"▸"} ${isBatch?"NHÓM KEY":"KEY"} · ${list.length} KEY</button>
+        <button type="button" class="secondary small" data-action="copy-batch" data-batch="${escapeHtml(batchId)}">▣ Sao chép nhóm</button>
+      </div>
+      <div class="batchBody ${open?"":"hidden"}">${list.map(renderKeyCard).join("")}</div>
+    </section>`;
   }).join("");
 }
-
-// ACTION BUTTONS
 $("keyList").addEventListener("click", async e => {
   const button = e.target.closest("button[data-action]");
-
   if (!button) return;
-
-  const action = button.dataset.action;
-
-  // MỞ / ĐÓNG NHÓM KEY
+  const id = button.dataset.id, action = button.dataset.action;
   if (action === "toggle-batch") {
-    const batchId = button.dataset.batchId;
-
-    if (expandedBatches.has(batchId)) {
-      expandedBatches.delete(batchId);
-    } else {
-      expandedBatches.add(batchId);
-    }
-
-    renderKeys();
+    const batch = button.dataset.batch;
+    if (expandedBatches.has(batch)) expandedBatches.delete(batch); else expandedBatches.add(batch);
+    renderKeys(); return;
+  }
+  if (action === "copy-batch") {
+    const batch = button.dataset.batch;
+    const members = keys.filter(k => (k.batch_id ? String(k.batch_id) : `single-${k.id}`) === batch);
+    button.disabled = true;
+    try {
+      const values = [];
+      const failures = [];
+      for (const k of members) {
+        try {
+          const data = await api("/api/admin/keys/"+encodeURIComponent(k.id)+"/copy", {method:"POST",body:"{}"});
+          values.push(data.key);
+        } catch (err) { failures.push(`${k.key_hint || "ID "+k.id}: ${err.message}`); }
+      }
+      if (values.length) await copyText(values.join("\n"));
+      if (failures.length) alert(`Đã sao chép ${values.length}/${members.length} Key. Không thể khôi phục các Key sau:\n`+failures.join("\n"));
+      else alert(`Đã sao chép toàn bộ ${values.length} Key trong nhóm.`);
+    } catch (err) { alert(err.message); }
+    finally { button.disabled = false; }
     return;
   }
-
-  const id = button.dataset.id;
-
   if (action === "copy") {
     button.disabled = true;
-
     try {
-      const data = await api(
-        "/api/admin/keys/" +
-        encodeURIComponent(id) +
-        "/copy",
-        {
-          method:"POST",
-          body:"{}"
-        }
-      );
-
+      const data = await api("/api/admin/keys/"+encodeURIComponent(id)+"/copy", {method:"POST",body:"{}"});
       await copyText(data.key);
-
       button.textContent = "ĐÃ SAO CHÉP ✓";
-
-      setTimeout(() => {
-        if (button.isConnected) {
-          button.textContent = "▣ Sao chép";
-        }
-      }, 1800);
-
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      button.disabled = false;
-    }
-
+      setTimeout(() => { if (button.isConnected) button.textContent = "▣ Sao chép"; }, 1800);
+    } catch (err) { alert(err.message); }
+    finally { button.disabled = false; }
     return;
   }
-
   if (action.startsWith("device-")) {
     const deviceId = button.dataset.deviceId;
-
-    if (
-      action === "device-delete" &&
-      !confirm(
-        "Xóa thiết bị này? Lượt kích hoạt sẽ được giải phóng để thiết bị khác dùng Key."
-      )
-    ) return;
-
-    if (
-      action === "device-block" &&
-      !confirm(
-        "Khóa thiết bị này? Thiết bị sẽ không thể tiếp tục xác thực Key."
-      )
-    ) return;
-
-    if (
-      action === "device-unblock" &&
-      !confirm("Mở khóa thiết bị này?")
-    ) return;
-
+    if (action === "device-delete" && !confirm("Xóa thiết bị này? Lượt kích hoạt sẽ được giải phóng để thiết bị khác dùng Key.")) return;
+    if (action === "device-block" && !confirm("Khóa thiết bị này? Thiết bị sẽ không thể tiếp tục xác thực Key.")) return;
+    if (action === "device-unblock" && !confirm("Mở khóa thiết bị này?")) return;
     button.disabled = true;
-
     try {
-      const base =
-        "/api/admin/keys/" +
-        encodeURIComponent(id) +
-        "/devices/" +
-        encodeURIComponent(deviceId);
-
-      if (action === "device-delete") {
-        await api(base, {method:"DELETE"});
-      } else {
-        await api(
-          base + "/" +
-          (
-            action === "device-block"
-              ? "block"
-              : "unblock"
-          ),
-          {
-            method:"POST",
-            body:"{}"
-          }
-        );
-      }
-
+      const base = "/api/admin/keys/" + encodeURIComponent(id) + "/devices/" + encodeURIComponent(deviceId);
+      if (action === "device-delete") await api(base, {method:"DELETE"});
+      else await api(base + "/" + (action === "device-block" ? "block" : "unblock"), {method:"POST",body:"{}"});
       await loadKeys();
-
-    } catch (err) {
-      alert(err.message);
-      button.disabled = false;
-    }
-
+    } catch (err) { alert(err.message); button.disabled = false; }
     return;
   }
-
-  if (
-    action === "delete" &&
-    !confirm(
-      "Bạn chắc chắn muốn xóa Key này? Thao tác không thể hoàn tác."
-    )
-  ) return;
-
-  if (
-    action === "lock" &&
-    !confirm(
-      "Khóa Key này? Ứng dụng sẽ không thể xác thực Key sau khi khóa."
-    )
-  ) return;
-
-  if (
-    action === "unlock" &&
-    !confirm("Mở khóa Key này?")
-  ) return;
-
+  if (action === "delete" && !confirm("Bạn chắc chắn muốn xóa Key này? Thao tác không thể hoàn tác.")) return;
+  if (action === "lock" && !confirm("Khóa Key này? Ứng dụng sẽ không thể xác thực Key sau khi khóa.")) return;
+  if (action === "unlock" && !confirm("Mở khóa Key này?")) return;
   button.disabled = true;
-
   try {
-    if (action === "delete") {
-      await api(
-        "/api/admin/keys/" + encodeURIComponent(id),
-        {method:"DELETE"}
-      );
-    } else {
-      await api(
-        "/api/admin/keys/" +
-        encodeURIComponent(id) +
-        "/" + action,
-        {
-          method:"POST",
-          body:"{}"
-        }
-      );
-    }
-
+    if (action === "delete") await api("/api/admin/keys/"+encodeURIComponent(id), {method:"DELETE"});
+    else await api("/api/admin/keys/"+encodeURIComponent(id)+"/"+action, {method:"POST",body:"{}"});
     await loadKeys();
-
-  } catch (err) {
-    alert(err.message);
-    button.disabled = false;
-  }
+  } catch (err) { alert(err.message); button.disabled = false; }
 });
-
-// COUNTDOWN
 setInterval(() => {
   document.querySelectorAll(".countdown").forEach(el => {
     const expiry = el.dataset.expiry;
-
     if (!expiry) return;
-
     const diff = new Date(expiry).getTime() - Date.now();
-
-    if (diff <= 0) {
-      el.textContent = "Đã hết hạn";
-      return;
-    }
-
-    const sec = Math.floor(diff/1000);
-    const d = Math.floor(sec/86400);
-    const h = Math.floor(sec%86400/3600);
-    const m = Math.floor(sec%3600/60);
-    const s = sec%60;
-
-    el.textContent =
-      `${d} ngày ${h} giờ ${m} phút ${s} giây`;
+    if (diff <= 0) { el.textContent = "Đã hết hạn"; return; }
+    const sec = Math.floor(diff/1000), d=Math.floor(sec/86400), h=Math.floor(sec%86400/3600), m=Math.floor(sec%3600/60), s=sec%60;
+    el.textContent = `${d} ngày ${h} giờ ${m} phút ${s} giây`;
   });
-}, 1000);
-
-// AUTO REFRESH
+},1000);
 setInterval(() => {
-  if (!$("adminView").classList.contains("hidden")) {
-    loadKeys();
-  }
+  if (!$("adminView").classList.contains("hidden")) loadKeys();
 }, 10000);
-
-// RESTORE ADMIN SESSION
 (async () => {
   try {
     const data = await api("/api/admin/session");
-
-    if (data.success) {
-      showAdmin();
-    } else {
-      showLogin();
-    }
-  } catch {
-    showLogin();
-  }
+    if (data.success) showAdmin(); else showLogin();
+  } catch { showLogin(); }
 })();
 </script>
-
 </body>
 </html>
+
