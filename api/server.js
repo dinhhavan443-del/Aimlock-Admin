@@ -90,6 +90,7 @@ function encryptKey(value) {
 
 function decryptKey(value) {
   const [ivText, tagText, encryptedText] = String(value).split(".");
+
   if (!ivText || !tagText || !encryptedText) {
     throw new Error("Encrypted key is invalid");
   }
@@ -165,9 +166,11 @@ function clearSessionCookie(res) {
 
 function validSession(req) {
   const value = req.cookies?.[COOKIE_NAME];
+
   if (!value || typeof value !== "string") return false;
 
   const parts = value.split(".");
+
   if (parts.length !== 2) return false;
 
   const [payload, signature] = parts;
@@ -191,7 +194,7 @@ function validSession(req) {
   }
 }
 
-// Cookie parser
+// COOKIE PARSER
 app.use((req, res, next) => {
   req.cookies = {};
   const header = req.headers.cookie || "";
@@ -343,6 +346,7 @@ app.post(
 
       if (result.rowCount === 0) {
         await client.query("ROLLBACK");
+
         return res.status(404).json({
           success: false,
           message: "KEY không tồn tại"
@@ -353,6 +357,7 @@ app.post(
 
       if (license.status !== "active") {
         await client.query("ROLLBACK");
+
         return res.status(403).json({
           success: false,
           message: "KEY đã bị khóa"
@@ -362,6 +367,7 @@ app.post(
       if (license.expires_at &&
           new Date(license.expires_at) <= new Date()) {
         await client.query("ROLLBACK");
+
         return res.status(403).json({
           success: false,
           message: "KEY đã hết hạn"
@@ -403,19 +409,22 @@ app.post(
 
         if (existing.rowCount === 0) {
           const countResult = await client.query(
-            "SELECT COUNT(*)::int AS total FROM license_devices WHERE license_id = $1",
+            `SELECT COUNT(*)::int AS total
+             FROM license_devices
+             WHERE license_id = $1`,
             [license.id]
           );
 
           const used = countResult.rows[0].total;
 
-          if (used >= license.max_devices) {
+          // GIỚI HẠN CỨNG: MỖI KEY CHỈ MỘT THIẾT BỊ
+          if (used >= 1) {
             await client.query("ROLLBACK");
 
             return res.status(403).json({
               success: false,
               code: "DEVICE_LIMIT_REACHED",
-              message: "KEY đã đạt giới hạn thiết bị"
+              message: "KEY này đã được kích hoạt trên thiết bị khác. Mỗi Key chỉ sử dụng được trên 1 thiết bị."
             });
           }
 
@@ -443,14 +452,18 @@ app.post(
 
       const activationResult = await client.query(
         `UPDATE license_keys
-         SET activated_at = COALESCE(activated_at, NOW())
+         SET activated_at = COALESCE(activated_at, NOW()),
+             max_devices = 1,
+             device_limit_enforced = TRUE
          WHERE id = $1
          RETURNING activated_at`,
         [license.id]
       );
 
       const countResult = await client.query(
-        "SELECT COUNT(*)::int AS total FROM license_devices WHERE license_id = $1",
+        `SELECT COUNT(*)::int AS total
+         FROM license_devices
+         WHERE license_id = $1`,
         [license.id]
       );
 
@@ -467,9 +480,9 @@ app.post(
         devicesUsed: countResult.rows[0].total,
         deviceCount: countResult.rows[0].total,
         usedDevices: countResult.rows[0].total,
-        maxDevices: license.max_devices,
-        deviceLimit: license.max_devices,
-        deviceLimitEnforced: license.device_limit_enforced
+        maxDevices: 1,
+        deviceLimit: 1,
+        deviceLimitEnforced: true
       });
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
@@ -491,7 +504,9 @@ app.get("/api/admin/keys", adminOnly, async (req, res) => {
     const result = await pool.query(
       `SELECT k.id, k.key_hint, k.status, k.expires_at, k.created_at,
               k.activated_at, k.note, k.duration_type, k.duration_value,
-              k.max_devices, (k.encrypted_key IS NOT NULL) AS can_copy,
+              1 AS max_devices,
+              k.batch_id, k.batch_size,
+              (k.encrypted_key IS NOT NULL) AS can_copy,
               COALESCE(d.devices_used, 0)::int AS devices_used,
               COALESCE(d.devices, '[]'::json) AS devices
        FROM license_keys k
@@ -507,7 +522,7 @@ app.get("/api/admin/keys", adminOnly, async (req, res) => {
          FROM license_devices ld
          WHERE ld.license_id = k.id
        ) d ON TRUE
-       ORDER BY k.created_at DESC`
+       ORDER BY k.created_at DESC, k.id DESC`
     );
 
     res.json({ success: true, keys: result.rows });
@@ -528,7 +543,6 @@ app.post("/api/admin/keys", sameOriginOnly, adminOnly, async (req, res) => {
   try {
     const type = String(req.body?.durationType || "");
     const amount = Number(req.body?.durationValue);
-    const maxDevices = Number(req.body?.maxDevices);
     const quantity = Number(req.body?.quantity ?? 1);
     const note = String(req.body?.note || "").slice(0, 200);
 
@@ -551,14 +565,6 @@ app.post("/api/admin/keys", sameOriginOnly, adminOnly, async (req, res) => {
       });
     }
 
-    if (!Number.isSafeInteger(maxDevices) ||
-        maxDevices < 1 || maxDevices > 100000) {
-      return res.status(400).json({
-        success: false,
-        message: "Số thiết bị phải từ 1 trở lên"
-      });
-    }
-
     if (!Number.isSafeInteger(quantity) ||
         quantity < 1 || quantity > MAX_BATCH_KEYS) {
       return res.status(400).json({
@@ -568,9 +574,13 @@ app.post("/api/admin/keys", sameOriginOnly, adminOnly, async (req, res) => {
     }
 
     const now = new Date();
+
     const expiresAt = type === "permanent"
       ? null
       : addDuration(now, type, amount);
+
+    // MỘT LẦN TẠO = MỘT MÃ LÔ RIÊNG
+    const batchId = crypto.randomBytes(16).toString("hex");
 
     const createdKeys = [];
 
@@ -588,8 +598,8 @@ app.post("/api/admin/keys", sameOriginOnly, adminOnly, async (req, res) => {
             `INSERT INTO license_keys
              (key_hash, key_hint, encrypted_key, status, expires_at,
               note, duration_type, duration_value, max_devices,
-              device_limit_enforced)
-             VALUES ($1, $2, $3, 'active', $4, $5, $6, $7, $8, TRUE)
+              device_limit_enforced, batch_id, batch_size)
+             VALUES ($1, $2, $3, 'active', $4, $5, $6, $7, 1, TRUE, $8, $9)
              RETURNING id, created_at, expires_at`,
             [
               hashKey(key),
@@ -599,7 +609,8 @@ app.post("/api/admin/keys", sameOriginOnly, adminOnly, async (req, res) => {
               note,
               type,
               type === "permanent" ? null : amount,
-              maxDevices
+              batchId,
+              quantity
             ]
           );
 
@@ -607,7 +618,9 @@ app.post("/api/admin/keys", sameOriginOnly, adminOnly, async (req, res) => {
             key,
             id: result.rows[0].id,
             createdAt: result.rows[0].created_at,
-            expiresAt: result.rows[0].expires_at
+            expiresAt: result.rows[0].expires_at,
+            batchId,
+            batchSize: quantity
           });
 
           inserted = true;
@@ -629,14 +642,15 @@ app.post("/api/admin/keys", sameOriginOnly, adminOnly, async (req, res) => {
       message: `Đã tạo thành công ${createdKeys.length} Key`,
       quantity: createdKeys.length,
       keys: createdKeys,
-      // Giữ tương thích với giao diện/API cũ khi tạo một Key.
+      batchId,
+      batchSize: quantity,
       key: createdKeys.length === 1 ? createdKeys[0].key : undefined,
       id: createdKeys.length === 1 ? createdKeys[0].id : undefined,
       createdAt: createdKeys.length === 1 ? createdKeys[0].createdAt : undefined,
       expiresAt: createdKeys.length === 1 ? createdKeys[0].expiresAt : undefined,
       durationType: type,
       durationValue: type === "permanent" ? null : amount,
-      maxDevices
+      maxDevices: 1
     });
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
@@ -899,7 +913,9 @@ async function initDatabase() {
       activated_at TIMESTAMPTZ,
       encrypted_key TEXT,
       max_devices INTEGER NOT NULL DEFAULT 1,
-      device_limit_enforced BOOLEAN NOT NULL DEFAULT TRUE
+      device_limit_enforced BOOLEAN NOT NULL DEFAULT TRUE,
+      batch_id TEXT,
+      batch_size INTEGER NOT NULL DEFAULT 1
     )
   `);
 
@@ -911,13 +927,19 @@ async function initDatabase() {
       ADD COLUMN IF NOT EXISTS activated_at TIMESTAMPTZ,
       ADD COLUMN IF NOT EXISTS encrypted_key TEXT,
       ADD COLUMN IF NOT EXISTS max_devices INTEGER NOT NULL DEFAULT 1,
-      ADD COLUMN IF NOT EXISTS device_limit_enforced BOOLEAN NOT NULL DEFAULT TRUE
+      ADD COLUMN IF NOT EXISTS device_limit_enforced BOOLEAN NOT NULL DEFAULT TRUE,
+      ADD COLUMN IF NOT EXISTS batch_id TEXT,
+      ADD COLUMN IF NOT EXISTS batch_size INTEGER NOT NULL DEFAULT 1
   `);
 
+  // Các Key đã tồn tại cũng được chuyển về giới hạn 1 thiết bị.
+  // Không xóa bảng hoặc xóa dữ liệu thiết bị cũ.
   await pool.query(`
     UPDATE license_keys
-    SET device_limit_enforced = TRUE
-    WHERE device_limit_enforced = FALSE
+    SET max_devices = 1,
+        device_limit_enforced = TRUE
+    WHERE max_devices <> 1
+       OR device_limit_enforced = FALSE
   `);
 
   await pool.query(`
@@ -942,6 +964,11 @@ async function initDatabase() {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_license_devices_license_id
     ON license_devices(license_id)
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_license_keys_batch_id
+    ON license_keys(batch_id)
   `);
 }
 
