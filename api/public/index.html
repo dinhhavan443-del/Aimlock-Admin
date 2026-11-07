@@ -144,6 +144,13 @@
       box-shadow:0 0 0 3px #b879ff20;
     }
 
+    input[readonly]{
+      color:#70edaa;
+      border-color:#286648;
+      background:#0d211a;
+      cursor:not-allowed;
+    }
+
     button{
       border:0;
       border-radius:12px;
@@ -530,6 +537,102 @@
       border-radius:11px;
     }
 
+    /* NHÓM KEY THEO LÔ */
+    .batchGroup{
+      border:1px solid #49345f;
+      border-radius:16px;
+      overflow:hidden;
+      background:linear-gradient(145deg,#191327,#100c1a);
+    }
+
+    .batchHeader{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:16px;
+      text-align:left;
+      color:var(--text);
+      background:linear-gradient(110deg,#211431,#171123);
+      border:0;
+      border-radius:0;
+    }
+
+    .batchHeader:active{
+      background:#2a1b3d;
+    }
+
+    .batchHeaderLeft{
+      display:grid;
+      gap:7px;
+      min-width:0;
+    }
+
+    .batchTitle{
+      font-size:13px;
+      font-weight:900;
+      letter-spacing:.04em;
+    }
+
+    .batchSub{
+      color:var(--muted);
+      font-size:10px;
+      font-weight:500;
+      line-height:1.5;
+      overflow-wrap:anywhere;
+    }
+
+    .batchHeaderRight{
+      display:flex;
+      align-items:center;
+      gap:9px;
+      flex-shrink:0;
+    }
+
+    .batchPill{
+      padding:7px 10px;
+      border-radius:999px;
+      background:#153c2b;
+      border:1px solid #286648;
+      color:#70edaa;
+      font-size:10px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+
+    .batchArrow{
+      color:#d2a8ff;
+      font-size:17px;
+      transition:transform .2s;
+    }
+
+    .batchGroup.expanded .batchArrow{
+      transform:rotate(180deg);
+    }
+
+    .batchBody{
+      display:none;
+      padding:10px;
+      border-top:1px solid #49345f;
+      gap:10px;
+    }
+
+    .batchGroup.expanded .batchBody{
+      display:grid;
+    }
+
+    .batchBody .keyCard{
+      background:#171123;
+    }
+
+    .batchEmpty{
+      padding:16px;
+      text-align:center;
+      color:var(--muted);
+      font-size:12px;
+    }
+
     @media(max-width:850px){
       .columns{grid-template-columns:1fr}
       .stats{grid-template-columns:repeat(2,1fr)}
@@ -549,6 +652,9 @@
       .deviceItem{padding:12px}
       .deviceHead{align-items:flex-start}
       .deviceActions button{flex:1}
+      .batchHeader{padding:13px}
+      .batchBody{padding:8px}
+      .batchPill{font-size:9px;padding:6px 8px}
     }
   </style>
 </head>
@@ -659,10 +765,17 @@
           </p>
 
           <label for="maxDevices">Số lượng thiết bị</label>
-          <input id="maxDevices" type="number" min="1" max="100000" value="1" required placeholder="Ví dụ: 3">
+          <input
+            id="maxDevices"
+            type="number"
+            min="1"
+            max="1"
+            value="1"
+            readonly
+            aria-readonly="true">
 
           <p class="hint">
-            Nhập số thiết bị được phép kích hoạt Key. Giới hạn được kiểm tra ở API khi ứng dụng gửi mã thiết bị.
+            Mỗi Key chỉ dùng được trên 1 thiết bị. Giới hạn được kiểm tra trực tiếp ở máy chủ.
           </p>
 
           <label for="note">Ghi chú (không bắt buộc)</label>
@@ -726,6 +839,9 @@ const $ = id => document.getElementById(id);
 
 let keys = [];
 let lastCreatedKeys = [];
+
+// Lưu trạng thái nhóm đang mở khi danh sách tự làm mới.
+const expandedBatches = new Set();
 
 const typeNames = {
   hours:"giờ",
@@ -877,13 +993,28 @@ $("createForm").addEventListener("submit", async e => {
     return;
   }
 
+  const durationValue = Number($("durationValue").value);
+
+  if (
+    durationType !== "permanent" &&
+    (!Number.isInteger(durationValue) ||
+     durationValue < 1 ||
+     durationValue > 100000)
+  ) {
+    $("createMessage").textContent =
+      "Thời hạn phải là số nguyên dương hợp lệ.";
+
+    $("createButton").disabled = false;
+    return;
+  }
+
   const payload = {
     durationType,
     durationValue:
       durationType === "permanent"
         ? null
-        : Number($("durationValue").value),
-    maxDevices:Number($("maxDevices").value),
+        : durationValue,
+    maxDevices:1,
     note:$("note").value,
     quantity
   };
@@ -911,13 +1042,15 @@ $("createForm").addEventListener("submit", async e => {
     }
 
     $("newKeys").value = lastCreatedKeys.join("\n");
+
     $("createdCount").textContent =
       lastCreatedKeys.length + " KEY ĐÃ TẠO";
 
     $("newKeyInfo").textContent =
-      "Tạo lúc: " + fmt(created[0]?.createdAt) +
+      "Mã lô: " + (data.batchId || created[0]?.batchId || "—") +
+      " · Tạo lúc: " + fmt(created[0]?.createdAt) +
       " · Hết hạn: " + fmt(created[0]?.expiresAt) +
-      " · Thiết bị tối đa mỗi Key: " + data.maxDevices;
+      " · Thiết bị tối đa mỗi Key: 1";
 
     $("keyReveal").classList.remove("hidden");
     $("note").value = "";
@@ -1034,7 +1167,7 @@ function renderDevices(k) {
     ? Number(k.devices_used)
     : devices.length;
 
-  const max = Number(k.max_devices || 1);
+  const max = 1;
 
   const header = `
     <div class="deviceTitle">
@@ -1136,8 +1269,151 @@ function renderDevices(k) {
   `;
 }
 
+// RENDER ONE KEY CARD
+function renderKeyCard(k) {
+  const status = effectiveStatus(k);
+
+  const statusText =
+    status === "active" ? "Đang hoạt động" :
+    status === "expired" ? "Đã hết hạn" :
+    status === "revoked" ? "Đã thu hồi" :
+    "Đã khóa";
+
+  const type = typeNames[k.duration_type] || "Key";
+
+  const used = Number(k.devices_used || 0);
+
+  const buttons = status === "active"
+    ? `
+      <button
+        class="warning small"
+        data-action="lock"
+        data-id="${escapeHtml(k.id)}">
+        🔒 Khóa Key
+      </button>
+    `
+    : (
+      status === "locked" || status === "revoked"
+    )
+      ? `
+        <button
+          class="success small"
+          data-action="unlock"
+          data-id="${escapeHtml(k.id)}">
+          🔓 Mở khóa
+        </button>
+      `
+      : "";
+
+  return `
+    <article class="keyCard">
+
+      <div class="keyHead">
+        <div class="keyCode">
+          AIM-••••-••••-••••-${escapeHtml(
+            String(k.key_hint || "").slice(-4)
+          )}
+        </div>
+
+        <span class="status ${escapeHtml(status)}">
+          ${statusText}
+        </span>
+      </div>
+
+      <div class="meta">
+        <span>Loại: ${escapeHtml(type)}</span>
+        <span>Thiết bị: ${used}/1</span>
+      </div>
+
+      <div class="meta">
+        <span>Tạo: ${escapeHtml(fmt(k.created_at))}</span>
+      </div>
+
+      <div class="meta">
+        <span>Kích hoạt: ${escapeHtml(fmt(k.activated_at))}</span>
+      </div>
+
+      <div class="meta">
+        <span>Hết hạn: ${escapeHtml(fmt(k.expires_at))}</span>
+      </div>
+
+      ${renderDevices(k)}
+
+      <div class="meta">
+        <span
+          class="countdown"
+          data-expiry="${escapeHtml(k.expires_at || "")}">
+          ${escapeHtml(countdown(k))}
+        </span>
+      </div>
+
+      ${
+        k.note
+          ? `<div class="meta">Ghi chú: ${escapeHtml(k.note)}</div>`
+          : ""
+      }
+
+      <div class="actions">
+
+        <button
+          class="success small"
+          data-action="copy"
+          data-id="${escapeHtml(k.id)}"
+          ${
+            k.can_copy
+              ? ""
+              : 'disabled title="Key cũ không thể khôi phục từ mã băm"'
+          }>
+          ▣ Sao chép
+        </button>
+
+        ${buttons}
+
+        <button
+          class="danger small"
+          data-action="delete"
+          data-id="${escapeHtml(k.id)}">
+          ✕ Xóa Key
+        </button>
+
+      </div>
+    </article>
+  `;
+}
+
+// TẠO NHÓM: KEY CÓ BATCH_ID CHUNG NẰM TRONG MỘT NHÓM.
+// KEY CŨ KHÔNG CÓ BATCH_ID SẼ HIỆN THÀNH NHÓM RIÊNG.
+function makeKeyGroups(list) {
+  const groups = new Map();
+
+  list.forEach(k => {
+    const batchId = k.batch_id
+      ? String(k.batch_id)
+      : "legacy-" + String(k.id);
+
+    if (!groups.has(batchId)) {
+      groups.set(batchId, {
+        id:batchId,
+        batchId:k.batch_id || null,
+        keys:[],
+        createdAt:k.created_at,
+        batchSize:Number(k.batch_size || 1),
+        legacy:!k.batch_id
+      });
+    }
+
+    groups.get(batchId).keys.push(k);
+  });
+
+  return Array.from(groups.values()).sort((a, b) => {
+    return new Date(b.createdAt || 0) -
+      new Date(a.createdAt || 0);
+  });
+}
+
 // RENDER KEY LIST
 function renderKeys() {
+  // THỐNG KÊ THEO TỪNG KEY, KHÔNG PHẢI SỐ NHÓM
   const active = keys.filter(
     k => effectiveStatus(k) === "active"
   ).length;
@@ -1167,115 +1443,81 @@ function renderKeys() {
     return;
   }
 
-  $("keyList").innerHTML = filtered.map(k => {
-    const status = effectiveStatus(k);
+  const groups = makeKeyGroups(filtered);
 
-    const statusText =
-      status === "active" ? "Đang hoạt động" :
-      status === "expired" ? "Đã hết hạn" :
-      status === "revoked" ? "Đã thu hồi" :
-      "Đã khóa";
+  $("keyList").innerHTML = groups.map(group => {
+    const groupKeys = group.keys;
+    const expanded = expandedBatches.has(group.id);
 
-    const type = typeNames[k.duration_type] || "Key";
+    const totalInBatch = group.legacy
+      ? groupKeys.length
+      : group.batchSize;
 
-    const used = Number(k.devices_used || 0);
-    const max = Number(k.max_devices || 1);
+    const activeInBatch = groupKeys.filter(
+      k => effectiveStatus(k) === "active"
+    ).length;
 
-    const buttons = status === "active"
-      ? `
-        <button
-          class="warning small"
-          data-action="lock"
-          data-id="${k.id}">
-          🔒 Khóa Key
-        </button>
-      `
-      : (
-        status === "locked" || status === "revoked"
-      )
-        ? `
-          <button
-            class="success small"
-            data-action="unlock"
-            data-id="${k.id}">
-            🔓 Mở khóa
-          </button>
-        `
-        : "";
+    const lockedInBatch = groupKeys.filter(
+      k => ["locked","revoked"].includes(effectiveStatus(k))
+    ).length;
+
+    const expiredInBatch = groupKeys.filter(
+      k => effectiveStatus(k) === "expired"
+    ).length;
+
+    const groupTitle = group.legacy
+      ? "KEY CŨ"
+      : "LÔ KEY";
+
+    const groupDescription = group.legacy
+      ? "Key chưa được phân nhóm từ phiên bản trước"
+      : "Mã lô: " + group.batchId;
+
+    const visibleCount = groupKeys.length;
 
     return `
-      <article class="keyCard">
+      <section class="batchGroup ${expanded ? "expanded" : ""}">
 
-        <div class="keyHead">
-          <div class="keyCode">
-            AIM-••••-••••-••••-${escapeHtml(
-              String(k.key_hint || "").slice(-4)
-            )}
-          </div>
+        <button
+          type="button"
+          class="batchHeader"
+          data-action="toggle-batch"
+          data-batch-id="${escapeHtml(group.id)}">
 
-          <span class="status ${status}">
-            ${statusText}
-          </span>
-        </div>
+          <span class="batchHeaderLeft">
+            <span class="batchTitle">
+              📦 ${groupTitle} · ${totalInBatch} KEY
+            </span>
 
-        <div class="meta">
-          <span>Loại: ${escapeHtml(type)}</span>
-          <span>Thiết bị: ${used}/${max}</span>
-        </div>
+            <span class="batchSub">
+              ${escapeHtml(groupDescription)}
+            </span>
 
-        <div class="meta">
-          <span>Tạo: ${escapeHtml(fmt(k.created_at))}</span>
-        </div>
+            <span class="batchSub">
+              🟢 ${activeInBatch} hoạt động
+              · 🔴 ${lockedInBatch} khóa
+              · 🟡 ${expiredInBatch} hết hạn
+            </span>
 
-        <div class="meta">
-          <span>Kích hoạt: ${escapeHtml(fmt(k.activated_at))}</span>
-        </div>
-
-        <div class="meta">
-          <span>Hết hạn: ${escapeHtml(fmt(k.expires_at))}</span>
-        </div>
-
-        ${renderDevices(k)}
-
-        <div class="meta">
-          <span
-            class="countdown"
-            data-expiry="${k.expires_at || ""}">
-            ${escapeHtml(countdown(k))}
-          </span>
-        </div>
-
-        ${
-          k.note
-            ? `<div class="meta">Ghi chú: ${escapeHtml(k.note)}</div>`
-            : ""
-        }
-
-        <div class="actions">
-
-          <button
-            class="success small"
-            data-action="copy"
-            data-id="${k.id}"
             ${
-              k.can_copy
-                ? ""
-                : 'disabled title="Key cũ không thể khôi phục từ mã băm"'
-            }>
-            ▣ Sao chép
-          </button>
+              q
+                ? `<span class="batchSub">Đang hiển thị ${visibleCount}/${totalInBatch} Key phù hợp tìm kiếm</span>`
+                : ""
+            }
+          </span>
 
-          ${buttons}
+          <span class="batchHeaderRight">
+            <span class="batchPill">${visibleCount} KEY</span>
+            <span class="batchArrow">⌄</span>
+          </span>
 
-          <button
-            class="danger small"
-            data-action="delete"
-            data-id="${k.id}">
-            ✕ Xóa Key
-          </button>
+        </button>
 
+        <div class="batchBody">
+          ${groupKeys.map(renderKeyCard).join("")}
         </div>
-      </article>
+
+      </section>
     `;
   }).join("");
 }
@@ -1286,8 +1528,23 @@ $("keyList").addEventListener("click", async e => {
 
   if (!button) return;
 
-  const id = button.dataset.id;
   const action = button.dataset.action;
+
+  // MỞ / ĐÓNG NHÓM KEY
+  if (action === "toggle-batch") {
+    const batchId = button.dataset.batchId;
+
+    if (expandedBatches.has(batchId)) {
+      expandedBatches.delete(batchId);
+    } else {
+      expandedBatches.add(batchId);
+    }
+
+    renderKeys();
+    return;
+  }
+
+  const id = button.dataset.id;
 
   if (action === "copy") {
     button.disabled = true;
