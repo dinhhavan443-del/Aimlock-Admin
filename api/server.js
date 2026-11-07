@@ -6,9 +6,7 @@ const crypto = require("crypto");
 const { Pool } = require("pg");
 
 const app = express();
-app.set("trust proxy", 1);
 app.disable("x-powered-by");
-
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -21,7 +19,6 @@ app.use(helmet({
     }
   }
 }));
-
 app.use(express.json({ limit: "20kb" }));
 
 const PORT = process.env.PORT || 3000;
@@ -31,14 +28,13 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const SESSION_SECRET = process.env.SESSION_SECRET || ADMIN_TOKEN;
 const KEY_HASH_SALT = process.env.KEY_HASH_SALT || "";
-const KEY_ENCRYPTION_SECRET = process.env.KEY_ENCRYPTION_SECRET || KEY_HASH_SALT;
-
 const COOKIE_NAME = "aimlock_admin";
 const SESSION_DAYS = 30;
-const MAX_BATCH_KEYS = 500;
 
 if (!DATABASE_URL || !KEY_HASH_SALT || !ADMIN_USERNAME || !ADMIN_PASSWORD || !SESSION_SECRET) {
-  console.error("Missing required environment variables: DATABASE_URL, KEY_HASH_SALT, ADMIN_USERNAME, ADMIN_PASSWORD, SESSION_SECRET.");
+  console.error(
+    "Missing required environment variables: DATABASE_URL, KEY_HASH_SALT, ADMIN_USERNAME, ADMIN_PASSWORD, SESSION_SECRET (ADMIN_TOKEN is optional)."
+  );
   process.exit(1);
 }
 
@@ -67,46 +63,24 @@ function hashDeviceId(deviceId) {
     .digest("hex");
 }
 
+// Key gốc chỉ được lưu ở dạng mã hóa AES-256-GCM để Admin có thể sao chép.
+// Không lưu Key rõ trong database. Dùng KEY_ENCRYPTION_SECRET riêng trên Render.
+const KEY_ENCRYPTION_SECRET = process.env.KEY_ENCRYPTION_SECRET || KEY_HASH_SALT;
 function encryptionKey() {
-  return crypto.createHash("sha256")
-    .update(KEY_ENCRYPTION_SECRET)
-    .digest();
+  return crypto.createHash("sha256").update(KEY_ENCRYPTION_SECRET).digest();
 }
-
 function encryptKey(value) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", encryptionKey(), iv);
-  const encrypted = Buffer.concat([
-    cipher.update(value, "utf8"),
-    cipher.final()
-  ]);
-
-  return [
-    iv.toString("base64"),
-    cipher.getAuthTag().toString("base64"),
-    encrypted.toString("base64")
-  ].join(".");
+  const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
+  return [iv.toString("base64"), cipher.getAuthTag().toString("base64"), encrypted.toString("base64")].join(".");
 }
-
 function decryptKey(value) {
   const [ivText, tagText, encryptedText] = String(value).split(".");
-
-  if (!ivText || !tagText || !encryptedText) {
-    throw new Error("Encrypted key is invalid");
-  }
-
-  const decipher = crypto.createDecipheriv(
-    "aes-256-gcm",
-    encryptionKey(),
-    Buffer.from(ivText, "base64")
-  );
-
+  if (!ivText || !tagText || !encryptedText) throw new Error("Encrypted key is invalid");
+  const decipher = crypto.createDecipheriv("aes-256-gcm", encryptionKey(), Buffer.from(ivText, "base64"));
   decipher.setAuthTag(Buffer.from(tagText, "base64"));
-
-  return Buffer.concat([
-    decipher.update(Buffer.from(encryptedText, "base64")),
-    decipher.final()
-  ]).toString("utf8");
+  return Buffer.concat([decipher.update(Buffer.from(encryptedText, "base64")), decipher.final()]).toString("utf8");
 }
 
 function makeKey() {
@@ -116,29 +90,21 @@ function makeKey() {
 
 function addDuration(start, type, amount) {
   const date = new Date(start);
-
-  if (type === "hours") {
-    date.setUTCHours(date.getUTCHours() + amount);
-  } else if (type === "days") {
-    date.setUTCDate(date.getUTCDate() + amount);
-  } else if (type === "weeks") {
-    date.setUTCDate(date.getUTCDate() + amount * 7);
-  } else if (type === "months" || type === "years") {
+  if (type === "hours") date.setUTCHours(date.getUTCHours() + amount);
+  else if (type === "days") date.setUTCDate(date.getUTCDate() + amount);
+  else if (type === "weeks") date.setUTCDate(date.getUTCDate() + amount * 7);
+  else if (type === "months" || type === "years") {
     const monthsToAdd = type === "years" ? amount * 12 : amount;
     const originalDay = date.getUTCDate();
-
     date.setUTCDate(1);
     date.setUTCMonth(date.getUTCMonth() + monthsToAdd);
-
     const lastDay = new Date(Date.UTC(
       date.getUTCFullYear(),
       date.getUTCMonth() + 1,
       0
     )).getUTCDate();
-
     date.setUTCDate(Math.min(originalDay, lastDay));
   }
-
   return date;
 }
 
@@ -147,45 +113,31 @@ function createSessionCookie(res, username) {
     username,
     exp: Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000
   })).toString("base64url");
-
   const signature = crypto.createHmac("sha256", SESSION_SECRET)
     .update(payload)
     .digest("base64url");
-
   const cookie = `${COOKIE_NAME}=${encodeURIComponent(payload + "." + signature)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_DAYS * 24 * 60 * 60}${process.env.NODE_ENV === "production" ? "; Secure" : ""}`;
-
   res.setHeader("Set-Cookie", cookie);
 }
 
 function clearSessionCookie(res) {
-  res.setHeader(
-    "Set-Cookie",
-    `${COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${process.env.NODE_ENV === "production" ? "; Secure" : ""}`
-  );
+  res.setHeader("Set-Cookie", `${COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
 }
 
 function validSession(req) {
   const value = req.cookies?.[COOKIE_NAME];
-
   if (!value || typeof value !== "string") return false;
-
   const parts = value.split(".");
-
   if (parts.length !== 2) return false;
 
   const [payload, signature] = parts;
-
   const expected = crypto.createHmac("sha256", SESSION_SECRET)
     .update(payload)
     .digest("base64url");
-
   if (!safeEqual(signature, expected)) return false;
 
   try {
-    const data = JSON.parse(
-      Buffer.from(payload, "base64url").toString("utf8")
-    );
-
+    const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
     return data.username === ADMIN_USERNAME &&
       Number.isFinite(data.exp) &&
       data.exp > Date.now();
@@ -194,59 +146,42 @@ function validSession(req) {
   }
 }
 
-// COOKIE PARSER
+// Minimal cookie parser; avoids adding another dependency.
 app.use((req, res, next) => {
   req.cookies = {};
   const header = req.headers.cookie || "";
-
   header.split(";").forEach(part => {
     const index = part.indexOf("=");
-
     if (index > 0) {
       const name = part.slice(0, index).trim();
       const value = part.slice(index + 1).trim();
-
-      try {
-        req.cookies[name] = decodeURIComponent(value);
-      } catch {
-        req.cookies[name] = value;
-      }
+      try { req.cookies[name] = decodeURIComponent(value); }
+      catch { req.cookies[name] = value; }
     }
   });
-
   next();
 });
 
 function sameOriginOnly(req, res, next) {
   const origin = req.get("origin");
-
   if (origin) {
     try {
       if (new URL(origin).host !== req.get("host")) {
-        return res.status(403).json({
-          success: false,
-          message: "Yêu cầu không hợp lệ"
-        });
+        return res.status(403).json({ success: false, message: "Yêu cầu không hợp lệ" });
       }
     } catch {
-      return res.status(403).json({
-        success: false,
-        message: "Yêu cầu không hợp lệ"
-      });
+      return res.status(403).json({ success: false, message: "Yêu cầu không hợp lệ" });
     }
   }
-
   next();
 }
 
 function adminOnly(req, res, next) {
   if (validSession(req)) return next();
 
+  // Keep support for the old private Bearer-token admin client.
   const auth = req.headers.authorization || "";
-
-  if (ADMIN_TOKEN && safeEqual(auth, "Bearer " + ADMIN_TOKEN)) {
-    return next();
-  }
+  if (ADMIN_TOKEN && safeEqual(auth, "Bearer " + ADMIN_TOKEN)) return next();
 
   return res.status(401).json({
     success: false,
@@ -259,10 +194,7 @@ const loginLimiter = rateLimit({
   limit: 8,
   standardHeaders: true,
   legacyHeaders: false,
-  message: {
-    success: false,
-    message: "Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau."
-  }
+  message: { success: false, message: "Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau." }
 });
 
 app.get("/health", (req, res) => {
@@ -273,16 +205,12 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// ADMIN AUTHENTICATION
+// Admin authentication
 app.post("/api/admin/login", sameOriginOnly, loginLimiter, (req, res) => {
-  const username = typeof req.body?.username === "string"
-    ? req.body.username : "";
+  const username = typeof req.body?.username === "string" ? req.body.username : "";
+  const password = typeof req.body?.password === "string" ? req.body.password : "";
 
-  const password = typeof req.body?.password === "string"
-    ? req.body.password : "";
-
-  if (!safeEqual(username, ADMIN_USERNAME) ||
-      !safeEqual(password, ADMIN_PASSWORD)) {
+  if (!safeEqual(username, ADMIN_USERNAME) || !safeEqual(password, ADMIN_PASSWORD)) {
     return res.status(401).json({
       success: false,
       message: "Sai tài khoản hoặc mật khẩu Admin"
@@ -290,11 +218,7 @@ app.post("/api/admin/login", sameOriginOnly, loginLimiter, (req, res) => {
   }
 
   createSessionCookie(res, username);
-
-  return res.json({
-    success: true,
-    message: "Đăng nhập thành công"
-  });
+  return res.json({ success: true, message: "Đăng nhập thành công" });
 });
 
 app.get("/api/admin/session", (req, res) => {
@@ -306,7 +230,8 @@ app.post("/api/admin/logout", sameOriginOnly, (req, res) => {
   res.json({ success: true });
 });
 
-// APP KEY VERIFICATION
+// Existing app verification endpoint. New keys enforce device limits;
+// older keys remain compatible with app versions that only send { key }.
 app.post(
   "/api/keys/verify",
   rateLimit({
@@ -317,11 +242,9 @@ app.post(
   }),
   async (req, res) => {
     const client = await pool.connect();
-
     try {
       const key = req.body?.key;
       const deviceId = req.body?.deviceId || req.body?.device_id;
-
       const deviceLabel = typeof req.body?.deviceLabel === "string"
         ? req.body.deviceLabel.replace(/[^a-zA-Z0-9 _.-]/g, "").slice(0, 40)
         : "Thiết bị";
@@ -334,7 +257,6 @@ app.post(
       }
 
       await client.query("BEGIN");
-
       const result = await client.query(
         `SELECT id, status, expires_at, created_at, activated_at,
                 duration_type, max_devices, device_limit_enforced
@@ -346,40 +268,24 @@ app.post(
 
       if (result.rowCount === 0) {
         await client.query("ROLLBACK");
-
-        return res.status(404).json({
-          success: false,
-          message: "KEY không tồn tại"
-        });
+        return res.status(404).json({ success: false, message: "KEY không tồn tại" });
       }
 
       const license = result.rows[0];
 
       if (license.status !== "active") {
         await client.query("ROLLBACK");
-
-        return res.status(403).json({
-          success: false,
-          message: "KEY đã bị khóa"
-        });
+        return res.status(403).json({ success: false, message: "KEY đã bị khóa" });
       }
 
-      if (license.expires_at &&
-          new Date(license.expires_at) <= new Date()) {
+      if (license.expires_at && new Date(license.expires_at) <= new Date()) {
         await client.query("ROLLBACK");
-
-        return res.status(403).json({
-          success: false,
-          message: "KEY đã hết hạn"
-        });
+        return res.status(403).json({ success: false, message: "KEY đã hết hạn" });
       }
 
       if (license.device_limit_enforced) {
-        if (typeof deviceId !== "string" ||
-            deviceId.trim().length < 8 ||
-            deviceId.length > 200) {
+        if (typeof deviceId !== "string" || deviceId.trim().length < 8 || deviceId.length > 200) {
           await client.query("ROLLBACK");
-
           return res.status(400).json({
             success: false,
             code: "DEVICE_ID_REQUIRED",
@@ -388,7 +294,6 @@ app.post(
         }
 
         const deviceHash = hashDeviceId(deviceId);
-
         const existing = await client.query(
           `SELECT id, status FROM license_devices
            WHERE license_id = $1 AND device_hash = $2
@@ -396,10 +301,8 @@ app.post(
           [license.id, deviceHash]
         );
 
-        if (existing.rowCount > 0 &&
-            existing.rows[0].status === "blocked") {
+        if (existing.rowCount > 0 && existing.rows[0].status === "blocked") {
           await client.query("ROLLBACK");
-
           return res.status(403).json({
             success: false,
             code: "DEVICE_BLOCKED",
@@ -409,66 +312,47 @@ app.post(
 
         if (existing.rowCount === 0) {
           const countResult = await client.query(
-            `SELECT COUNT(*)::int AS total
-             FROM license_devices
-             WHERE license_id = $1`,
+            "SELECT COUNT(*)::int AS total FROM license_devices WHERE license_id = $1",
             [license.id]
           );
-
           const used = countResult.rows[0].total;
-
-          // GIỚI HẠN CỨNG: MỖI KEY CHỈ MỘT THIẾT BỊ
-          if (used >= 1) {
+          if (used >= Number(license.max_devices || 1)) {
             await client.query("ROLLBACK");
-
             return res.status(403).json({
               success: false,
               code: "DEVICE_LIMIT_REACHED",
-              message: "KEY này đã được kích hoạt trên thiết bị khác. Mỗi Key chỉ sử dụng được trên 1 thiết bị."
+              message: `KEY đã đạt giới hạn ${Number(license.max_devices || 1)} thiết bị`
             });
           }
 
           await client.query(
-            `INSERT INTO license_devices
-             (license_id, device_hash, device_hint)
+            `INSERT INTO license_devices (license_id, device_hash, device_hint)
              VALUES ($1, $2, $3)`,
-            [
-              license.id,
-              deviceHash,
-              deviceLabel + " · ..." + deviceId.slice(-4)
-            ]
+            [license.id, deviceHash, deviceLabel + " · ..." + deviceId.slice(-4)]
           );
+
         } else {
           await client.query(
             `UPDATE license_devices
              SET last_seen_at = NOW()
-             WHERE license_id = $1
-               AND device_hash = $2
-               AND status = 'active'`,
+             WHERE license_id = $1 AND device_hash = $2 AND status = 'active' `,
             [license.id, deviceHash]
           );
         }
       }
 
       const activationResult = await client.query(
-        `UPDATE license_keys
-         SET activated_at = COALESCE(activated_at, NOW()),
-             max_devices = 1,
-             device_limit_enforced = TRUE
-         WHERE id = $1
-         RETURNING activated_at`,
+        `UPDATE license_keys SET activated_at = COALESCE(activated_at, NOW())
+         WHERE id = $1 RETURNING activated_at`,
         [license.id]
       );
 
       const countResult = await client.query(
-        `SELECT COUNT(*)::int AS total
-         FROM license_devices
-         WHERE license_id = $1`,
+        "SELECT COUNT(*)::int AS total FROM license_devices WHERE license_id = $1",
         [license.id]
       );
 
       await client.query("COMMIT");
-
       return res.json({
         success: true,
         message: "Xác thực KEY thành công",
@@ -480,33 +364,27 @@ app.post(
         devicesUsed: countResult.rows[0].total,
         deviceCount: countResult.rows[0].total,
         usedDevices: countResult.rows[0].total,
-        maxDevices: 1,
-        deviceLimit: 1,
-        deviceLimitEnforced: true
+        maxDevices: license.max_devices,
+        deviceLimit: license.max_devices,
+        deviceLimitEnforced: license.device_limit_enforced
       });
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
       console.error("Key verification error:", error);
-
-      return res.status(500).json({
-        success: false,
-        message: "Lỗi máy chủ"
-      });
+      return res.status(500).json({ success: false, message: "Lỗi máy chủ" });
     } finally {
       client.release();
     }
   }
 );
 
-// ADMIN: LIST KEYS
+// Admin APIs
 app.get("/api/admin/keys", adminOnly, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT k.id, k.key_hint, k.status, k.expires_at, k.created_at,
               k.activated_at, k.note, k.duration_type, k.duration_value,
-              1 AS max_devices,
-              k.batch_id, k.batch_size,
-              (k.encrypted_key IS NOT NULL) AS can_copy,
+              k.max_devices, k.batch_id, k.batch_size, (k.encrypted_key IS NOT NULL) AS can_copy,
               COALESCE(d.devices_used, 0)::int AS devices_used,
               COALESCE(d.devices, '[]'::json) AS devices
        FROM license_keys k
@@ -522,382 +400,205 @@ app.get("/api/admin/keys", adminOnly, async (req, res) => {
          FROM license_devices ld
          WHERE ld.license_id = k.id
        ) d ON TRUE
-       ORDER BY k.created_at DESC, k.id DESC`
+       ORDER BY k.created_at DESC`
     );
-
     res.json({ success: true, keys: result.rows });
   } catch (error) {
     console.error("List keys error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Không tải được danh sách Key"
-    });
+    res.status(500).json({ success: false, message: "Không tải được danh sách Key" });
   }
 });
 
-// ADMIN: CREATE ONE OR MANY KEYS
 app.post("/api/admin/keys", sameOriginOnly, adminOnly, async (req, res) => {
-  const client = await pool.connect();
-
   try {
     const type = String(req.body?.durationType || "");
     const amount = Number(req.body?.durationValue);
+    const maxDevices = Number(req.body?.maxDevices ?? 1);
     const quantity = Number(req.body?.quantity ?? 1);
     const note = String(req.body?.note || "").slice(0, 200);
-
-    const allowed = [
-      "hours", "days", "weeks", "months", "years", "permanent"
-    ];
+    const allowed = ["hours", "days", "weeks", "months", "years", "permanent"];
 
     if (!allowed.includes(type)) {
-      return res.status(400).json({
-        success: false,
-        message: "Loại thời hạn không hợp lệ"
-      });
+      return res.status(400).json({ success: false, message: "Loại thời hạn không hợp lệ" });
     }
-
     if (type !== "permanent" &&
         (!Number.isSafeInteger(amount) || amount < 1 || amount > 100000)) {
-      return res.status(400).json({
-        success: false,
-        message: "Thời hạn phải là số nguyên dương hợp lệ"
-      });
+      return res.status(400).json({ success: false, message: "Thời hạn phải là số nguyên dương hợp lệ" });
+    }
+    if (!Number.isSafeInteger(maxDevices) || maxDevices < 1 || maxDevices > 10) {
+      return res.status(400).json({ success: false, message: "Số thiết bị phải từ 1 đến 10" });
+    }
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 500) {
+      return res.status(400).json({ success: false, message: "Số lượng Key phải từ 1 đến 500" });
     }
 
-    if (!Number.isSafeInteger(quantity) ||
-        quantity < 1 || quantity > MAX_BATCH_KEYS) {
-      return res.status(400).json({
-        success: false,
-        message: `Số lượng Key phải từ 1 đến ${MAX_BATCH_KEYS}`
-      });
-    }
-
-    const now = new Date();
-
-    const expiresAt = type === "permanent"
-      ? null
-      : addDuration(now, type, amount);
-
-    // MỘT LẦN TẠO = MỘT MÃ LÔ RIÊNG
-    const batchId = crypto.randomBytes(16).toString("hex");
-
+    const batchId = crypto.randomUUID();
     const createdKeys = [];
-
-    await client.query("BEGIN");
-
-    for (let i = 0; i < quantity; i++) {
-      let key;
-      let inserted = false;
-
-      for (let attempt = 0; attempt < 10; attempt++) {
-        key = makeKey();
-
-        try {
-          const result = await client.query(
-            `INSERT INTO license_keys
-             (key_hash, key_hint, encrypted_key, status, expires_at,
-              note, duration_type, duration_value, max_devices,
-              device_limit_enforced, batch_id, batch_size)
-             VALUES ($1, $2, $3, 'active', $4, $5, $6, $7, 1, TRUE, $8, $9)
-             RETURNING id, created_at, expires_at`,
-            [
-              hashKey(key),
-              "****-" + key.slice(-4),
-              encryptKey(key),
-              expiresAt,
-              note,
-              type,
-              type === "permanent" ? null : amount,
-              batchId,
-              quantity
-            ]
-          );
-
-          createdKeys.push({
-            key,
-            id: result.rows[0].id,
-            createdAt: result.rows[0].created_at,
-            expiresAt: result.rows[0].expires_at,
-            batchId,
-            batchSize: quantity
-          });
-
-          inserted = true;
-          break;
-        } catch (error) {
-          if (error.code !== "23505") throw error;
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      for (let i = 0; i < quantity; i++) {
+        let inserted = null;
+        let key = "";
+        for (let attempt = 0; attempt < 5; attempt++) {
+          key = makeKey();
+          const now = new Date();
+          const expiresAt = type === "permanent" ? null : addDuration(now, type, amount);
+          try {
+            inserted = await client.query(
+              `INSERT INTO license_keys
+               (key_hash, key_hint, encrypted_key, status, expires_at, note, duration_type,
+                duration_value, max_devices, device_limit_enforced, batch_id, batch_size)
+               VALUES ($1, $2, $3, 'active', $4, $5, $6, $7, $8, TRUE, $9, $10)
+               RETURNING id, created_at, expires_at`,
+              [hashKey(key), "****-" + key.slice(-4), encryptKey(key), expiresAt,
+               note, type, type === "permanent" ? null : amount, maxDevices, batchId, quantity]
+            );
+            break;
+          } catch (error) {
+            if (error.code !== "23505" || attempt === 4) throw error;
+          }
         }
+        if (!inserted) throw new Error("Không thể tạo Key duy nhất");
+        createdKeys.push({
+          id: inserted.rows[0].id,
+          key,
+          createdAt: inserted.rows[0].created_at,
+          expiresAt: inserted.rows[0].expires_at
+        });
       }
-
-      if (!inserted) {
-        throw new Error("Không thể tạo Key duy nhất sau nhiều lần thử");
-      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      client.release();
     }
-
-    await client.query("COMMIT");
 
     return res.json({
       success: true,
-      message: `Đã tạo thành công ${createdKeys.length} Key`,
-      quantity: createdKeys.length,
-      keys: createdKeys,
       batchId,
       batchSize: quantity,
-      key: createdKeys.length === 1 ? createdKeys[0].key : undefined,
-      id: createdKeys.length === 1 ? createdKeys[0].id : undefined,
-      createdAt: createdKeys.length === 1 ? createdKeys[0].createdAt : undefined,
-      expiresAt: createdKeys.length === 1 ? createdKeys[0].expiresAt : undefined,
+      createdKeys,
+      createdAt: createdKeys[0]?.createdAt || new Date(),
+      expiresAt: createdKeys[0]?.expiresAt || null,
       durationType: type,
       durationValue: type === "permanent" ? null : amount,
-      maxDevices: 1
+      maxDevices
     });
   } catch (error) {
-    await client.query("ROLLBACK").catch(() => {});
-    console.error("Create keys error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Không tạo được Key. Giao dịch đã được hoàn tác."
-    });
-  } finally {
-    client.release();
+    console.error("Create key error:", error);
+    res.status(500).json({ success: false, message: "Không tạo được Key" });
   }
 });
 
-// ADMIN: COPY ONE KEY
 app.post("/api/admin/keys/:id/copy", sameOriginOnly, adminOnly, async (req, res) => {
   try {
     const id = Number(req.params.id);
-
-    if (!Number.isSafeInteger(id) || id < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "ID không hợp lệ"
-      });
-    }
-
-    const result = await pool.query(
-      "SELECT encrypted_key FROM license_keys WHERE id = $1",
-      [id]
-    );
-
-    if (!result.rowCount) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy Key"
-      });
-    }
-
-    if (!result.rows[0].encrypted_key) {
-      return res.status(409).json({
-        success: false,
-        message: "Key này được tạo từ phiên bản cũ và chỉ lưu mã băm nên không thể khôi phục để sao chép. Key vẫn xác thực bình thường."
-      });
-    }
-
-    return res.json({
-      success: true,
-      key: decryptKey(result.rows[0].encrypted_key)
-    });
+    if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ success: false, message: "ID không hợp lệ" });
+    const result = await pool.query("SELECT encrypted_key FROM license_keys WHERE id = $1", [id]);
+    if (!result.rowCount) return res.status(404).json({ success: false, message: "Không tìm thấy Key" });
+    if (!result.rows[0].encrypted_key) return res.status(409).json({ success: false, message: "Key này được tạo từ phiên bản cũ và chỉ lưu mã băm nên không thể khôi phục để sao chép. Key vẫn xác thực bình thường." });
+    return res.json({ success: true, key: decryptKey(result.rows[0].encrypted_key) });
   } catch (error) {
     console.error("Copy key error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Không thể giải mã Key. Kiểm tra KEY_ENCRYPTION_SECRET."
-    });
+    return res.status(500).json({ success: false, message: "Không thể giải mã Key. Kiểm tra KEY_ENCRYPTION_SECRET." });
   }
 });
 
 async function setKeyStatus(req, res, status) {
   try {
     const id = Number(req.params.id);
-
     if (!Number.isSafeInteger(id) || id < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "ID không hợp lệ"
-      });
+      return res.status(400).json({ success: false, message: "ID không hợp lệ" });
     }
-
     const result = await pool.query(
       "UPDATE license_keys SET status = $1 WHERE id = $2",
       [status, id]
     );
-
     if (result.rowCount === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy Key"
-      });
+      return res.status(404).json({ success: false, message: "Không tìm thấy Key" });
     }
-
-    return res.json({
-      success: true,
-      message: status === "active" ? "Đã mở khóa Key" : "Đã khóa Key"
-    });
+    return res.json({ success: true, message: status === "active" ? "Đã mở khóa Key" : "Đã khóa Key" });
   } catch (error) {
     console.error("Update key status error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Không cập nhật được Key"
-    });
+    return res.status(500).json({ success: false, message: "Không cập nhật được Key" });
   }
 }
 
-app.post("/api/admin/keys/:id/lock", sameOriginOnly, adminOnly,
-  (req, res) => setKeyStatus(req, res, "locked"));
+app.post("/api/admin/keys/:id/lock", sameOriginOnly, adminOnly, (req, res) =>
+  setKeyStatus(req, res, "locked")
+);
+app.post("/api/admin/keys/:id/unlock", sameOriginOnly, adminOnly, (req, res) =>
+  setKeyStatus(req, res, "active")
+);
 
-app.post("/api/admin/keys/:id/unlock", sameOriginOnly, adminOnly,
-  (req, res) => setKeyStatus(req, res, "active"));
+// Keep old revoke route working; revoked keys remain unusable.
+app.post("/api/admin/keys/:id/revoke", sameOriginOnly, adminOnly, (req, res) =>
+  setKeyStatus(req, res, "revoked")
+);
 
-app.post("/api/admin/keys/:id/revoke", sameOriginOnly, adminOnly,
-  (req, res) => setKeyStatus(req, res, "revoked"));
-
-// DEVICE MANAGEMENT
+// Device management. Blocked devices still occupy a slot; deleting a device frees it.
 async function setDeviceStatus(req, res, status) {
   try {
     const keyId = Number(req.params.id);
     const deviceId = Number(req.params.deviceId);
-
-    if (!Number.isSafeInteger(keyId) || keyId < 1 ||
-        !Number.isSafeInteger(deviceId) || deviceId < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "ID thiết bị không hợp lệ"
-      });
+    if (!Number.isSafeInteger(keyId) || keyId < 1 || !Number.isSafeInteger(deviceId) || deviceId < 1) {
+      return res.status(400).json({ success: false, message: "ID thiết bị không hợp lệ" });
     }
-
     const result = await pool.query(
       `UPDATE license_devices SET status = $1
-       WHERE id = $2 AND license_id = $3
-       RETURNING id, status`,
+       WHERE id = $2 AND license_id = $3 RETURNING id, status`,
       [status, deviceId, keyId]
     );
-
-    if (!result.rowCount) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy thiết bị"
-      });
-    }
-
-    return res.json({
-      success: true,
-      device: result.rows[0],
-      message: status === "blocked"
-        ? "Đã khóa thiết bị"
-        : "Đã mở khóa thiết bị"
-    });
+    if (!result.rowCount) return res.status(404).json({ success: false, message: "Không tìm thấy thiết bị" });
+    return res.json({ success: true, device: result.rows[0], message: status === "blocked" ? "Đã khóa thiết bị" : "Đã mở khóa thiết bị" });
   } catch (error) {
     console.error("Set device status error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Không cập nhật được thiết bị"
-    });
+    return res.status(500).json({ success: false, message: "Không cập nhật được thiết bị" });
   }
 }
 
-app.post(
-  "/api/admin/keys/:id/devices/:deviceId/block",
-  sameOriginOnly,
-  adminOnly,
-  (req, res) => setDeviceStatus(req, res, "blocked")
-);
-
-app.post(
-  "/api/admin/keys/:id/devices/:deviceId/unblock",
-  sameOriginOnly,
-  adminOnly,
-  (req, res) => setDeviceStatus(req, res, "active")
-);
-
-app.delete(
-  "/api/admin/keys/:id/devices/:deviceId",
-  sameOriginOnly,
-  adminOnly,
-  async (req, res) => {
-    try {
-      const keyId = Number(req.params.id);
-      const deviceId = Number(req.params.deviceId);
-
-      if (!Number.isSafeInteger(keyId) || keyId < 1 ||
-          !Number.isSafeInteger(deviceId) || deviceId < 1) {
-        return res.status(400).json({
-          success: false,
-          message: "ID thiết bị không hợp lệ"
-        });
-      }
-
-      const result = await pool.query(
-        "DELETE FROM license_devices WHERE id = $1 AND license_id = $2 RETURNING id",
-        [deviceId, keyId]
-      );
-
-      if (!result.rowCount) {
-        return res.status(404).json({
-          success: false,
-          message: "Không tìm thấy thiết bị"
-        });
-      }
-
-      return res.json({
-        success: true,
-        message: "Đã xóa thiết bị. Một lượt kích hoạt đã được giải phóng."
-      });
-    } catch (error) {
-      console.error("Delete device error:", error);
-
-      return res.status(500).json({
-        success: false,
-        message: "Không xóa được thiết bị"
-      });
-    }
-  }
-);
-
-// DELETE KEY
-app.delete("/api/admin/keys/:id", sameOriginOnly, adminOnly, async (req, res) => {
+app.post("/api/admin/keys/:id/devices/:deviceId/block", sameOriginOnly, adminOnly,
+  (req, res) => setDeviceStatus(req, res, "blocked"));
+app.post("/api/admin/keys/:id/devices/:deviceId/unblock", sameOriginOnly, adminOnly,
+  (req, res) => setDeviceStatus(req, res, "active"));
+app.delete("/api/admin/keys/:id/devices/:deviceId", sameOriginOnly, adminOnly, async (req, res) => {
   try {
-    const id = Number(req.params.id);
-
-    if (!Number.isSafeInteger(id) || id < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "ID không hợp lệ"
-      });
+    const keyId = Number(req.params.id);
+    const deviceId = Number(req.params.deviceId);
+    if (!Number.isSafeInteger(keyId) || keyId < 1 || !Number.isSafeInteger(deviceId) || deviceId < 1) {
+      return res.status(400).json({ success: false, message: "ID thiết bị không hợp lệ" });
     }
-
     const result = await pool.query(
-      "DELETE FROM license_keys WHERE id = $1",
-      [id]
+      "DELETE FROM license_devices WHERE id = $1 AND license_id = $2 RETURNING id",
+      [deviceId, keyId]
     );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy Key"
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Đã xóa Key"
-    });
+    if (!result.rowCount) return res.status(404).json({ success: false, message: "Không tìm thấy thiết bị" });
+    return res.json({ success: true, message: "Đã xóa thiết bị. Một lượt kích hoạt đã được giải phóng." });
   } catch (error) {
-    console.error("Delete key error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Không xóa được Key"
-    });
+    console.error("Delete device error:", error);
+    return res.status(500).json({ success: false, message: "Không xóa được thiết bị" });
   }
 });
 
-// DATABASE
+app.delete("/api/admin/keys/:id", sameOriginOnly, adminOnly, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) {
+      return res.status(400).json({ success: false, message: "ID không hợp lệ" });
+    }
+    const result = await pool.query("DELETE FROM license_keys WHERE id = $1", [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy Key" });
+    }
+    res.json({ success: true, message: "Đã xóa Key" });
+  } catch (error) {
+    console.error("Delete key error:", error);
+    res.status(500).json({ success: false, message: "Không xóa được Key" });
+  }
+});
+
 async function initDatabase() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS license_keys (
@@ -919,6 +620,7 @@ async function initDatabase() {
     )
   `);
 
+  // Safe migrations for databases created by the previous API version.
   await pool.query(`
     ALTER TABLE license_keys
       ALTER COLUMN expires_at DROP NOT NULL,
@@ -932,15 +634,8 @@ async function initDatabase() {
       ADD COLUMN IF NOT EXISTS batch_size INTEGER NOT NULL DEFAULT 1
   `);
 
-  // Các Key đã tồn tại cũng được chuyển về giới hạn 1 thiết bị.
-  // Không xóa bảng hoặc xóa dữ liệu thiết bị cũ.
-  await pool.query(`
-    UPDATE license_keys
-    SET max_devices = 1,
-        device_limit_enforced = TRUE
-    WHERE max_devices <> 1
-       OR device_limit_enforced = FALSE
-  `);
+  // Các Key cũ cũng được áp dụng giới hạn thiết bị; max_devices cũ mặc định là 1.
+  await pool.query(`UPDATE license_keys SET device_limit_enforced = TRUE WHERE device_limit_enforced = FALSE`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS license_devices (
@@ -948,8 +643,7 @@ async function initDatabase() {
       license_id BIGINT NOT NULL REFERENCES license_keys(id) ON DELETE CASCADE,
       device_hash TEXT NOT NULL,
       device_hint TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'active'
-        CHECK (status IN ('active', 'blocked')),
+      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'blocked')),
       first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE (license_id, device_hash)
@@ -964,11 +658,6 @@ async function initDatabase() {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_license_devices_license_id
     ON license_devices(license_id)
-  `);
-
-  await pool.query(`
-    CREATE INDEX IF NOT EXISTS idx_license_keys_batch_id
-    ON license_keys(batch_id)
   `);
 }
 
